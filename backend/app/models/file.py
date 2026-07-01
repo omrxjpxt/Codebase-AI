@@ -13,6 +13,7 @@ class File(Base):
     path: Mapped[str] = mapped_column(String, nullable=False)
     language: Mapped[str] = mapped_column(String, nullable=False)
     size: Mapped[int] = mapped_column(Integer, nullable=False)
+    content: Mapped[str | None] = mapped_column(String, nullable=True)
 
     repository = relationship("Repository", back_populates="files")
     chunks = relationship("Chunk", back_populates="file", cascade="all, delete-orphan")

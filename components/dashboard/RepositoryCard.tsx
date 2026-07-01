@@ -8,7 +8,8 @@ interface RepositoryCardProps {
 }
 
 const statusConfig: Record<string, { label: string; color: string; dot: string }> = {
-  completed: { label: "Indexed", color: "text-emerald-400", dot: "bg-emerald-400" },
+  indexed: { label: "Indexed", color: "text-emerald-400", dot: "bg-emerald-400" },
+  embedding: { label: "Embedding", color: "text-blue-400", dot: "bg-blue-400" },
   processing: { label: "Processing", color: "text-amber-400", dot: "bg-amber-400" },
   failed: { label: "Failed", color: "text-red-400", dot: "bg-red-400" },
 };

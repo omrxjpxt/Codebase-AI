@@ -2,6 +2,7 @@ import os
 import shutil
 import tempfile
 import uuid
+import asyncio
 from typing import List
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,7 +20,8 @@ from app.schemas.chat import AskRequest, AskResponse
 from google import genai
 from app.core.config import settings
 from app.api.dependencies import get_current_user
-from app.services.repository_service import process_and_store_repository
+from app.services.repository_service import process_and_store_repository, generate_embeddings_for_repo
+from app.services.retrieval_service import retrieve_relevant_chunks
 
 router = APIRouter(prefix="/repositories", tags=["repositories"])
 
@@ -32,19 +34,24 @@ async def upload_repository(
     if not file.filename.endswith('.zip'):
         raise HTTPException(status_code=400, detail="Only ZIP files are supported")
         
+    if file.size and file.size > settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024:
+        raise HTTPException(status_code=413, detail=f"File too large. Maximum size is {settings.MAX_UPLOAD_SIZE_MB} MB.")
+        
     repo_name = file.filename.replace('.zip', '')
     
-    # Save uploaded file temporarily
-    fd, temp_path = tempfile.mkstemp(suffix='.zip')
+    # Save uploaded file
+    os.makedirs(settings.UPLOAD_DIRECTORY, exist_ok=True)
+    temp_path = os.path.join(settings.UPLOAD_DIRECTORY, f"{uuid.uuid4()}_{file.filename}")
+    
     try:
-        with os.fdopen(fd, 'wb') as f:
+        with open(temp_path, 'wb') as f:
             shutil.copyfileobj(file.file, f)
             
         # Process and store
         repo = await process_and_store_repository(db, current_user.id, repo_name, temp_path)
         return repo
     finally:
-        if os.path.exists(temp_path):
+        if settings.DELETE_UPLOADED_ZIP_AFTER_INDEXING and os.path.exists(temp_path):
             os.remove(temp_path)
 
 @router.get("", response_model=List[RepositoryResponse])
@@ -87,6 +94,7 @@ async def get_repository(
         "github_url": repo.github_url,
         "user_id": repo.user_id,
         "status": repo.status,
+        "error_message": repo.error_message,
         "upload_date": repo.upload_date,
         "file_count": file_count,
         "chunk_count": chunk_count,
@@ -105,6 +113,28 @@ async def get_repository_files(
     stmt = select(DBFile).where(DBFile.repository_id == repo.id)
     result = await db.execute(stmt)
     return result.scalars().all()
+
+@router.get("/{id}/files/{file_id}/content")
+async def get_file_content(
+    id: uuid.UUID,
+    file_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    # Verify repo
+    repo = await get_repository(id, current_user, db)
+    
+    stmt = select(DBFile).where(DBFile.id == file_id, DBFile.repository_id == id)
+    file_obj = (await db.execute(stmt)).scalar_one_or_none()
+    
+    if not file_obj:
+        raise HTTPException(status_code=404, detail="File not found")
+        
+    return {
+        "filename": file_obj.path.split("/")[-1],
+        "language": file_obj.language,
+        "content": file_obj.content
+    }
 
 @router.get("/{id}/chunks", response_model=List[ChunkResponse])
 async def get_repository_chunks(
@@ -126,8 +156,42 @@ async def delete_repository(
     db: AsyncSession = Depends(get_db)
 ):
     repo = await get_repository(id, current_user, db)
-    await db.delete(repo)
+    
+    stmt = select(Repository).where(Repository.id == id, Repository.user_id == current_user.id)
+    result = await db.execute(stmt)
+    repo_obj = result.scalar_one_or_none()
+    if repo_obj:
+        await db.delete(repo_obj)
+        await db.commit()
+
+@router.post("/{id}/reindex", response_model=RepositoryResponse)
+async def reindex_repository(
+    id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = select(Repository).where(Repository.id == id, Repository.user_id == current_user.id)
+    result = await db.execute(stmt)
+    repo = result.scalar_one_or_none()
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found")
+        
+    update_stmt = select(Chunk).where(Chunk.repository_id == id)
+    chunks_result = await db.execute(update_stmt)
+    for chunk in chunks_result.scalars():
+        chunk.embedding = None
+        chunk.embedding_model = None
+        chunk.embedding_created_at = None
+        
+    repo.status = "embedding"
+    repo.error_message = None
     await db.commit()
+    
+    asyncio.create_task(generate_embeddings_for_repo(repo.id))
+    
+    await db.refresh(repo)
+    return repo
+
 
 @router.post("/{id}/ask", response_model=AskResponse)
 async def ask_repository_question(
@@ -143,32 +207,24 @@ async def ask_repository_question(
     if not repo:
         raise HTTPException(status_code=404, detail="Repository not found")
         
-    # Get first 10 chunks with file paths
-    chunk_stmt = (
-        select(Chunk, DBFile.path)
-        .join(DBFile, Chunk.file_id == DBFile.id)
-        .where(Chunk.repository_id == id)
-        .limit(10)
-    )
-    chunk_results = await db.execute(chunk_stmt)
-    chunks_data = chunk_results.all()
+    sources_data = await retrieve_relevant_chunks(db, id, request.question, top_k=8)
     
-    file_paths = list(set([row.path for row in chunks_data]))
+    file_paths = list(set([source['path'] for source in sources_data]))
     
-    chunks_text = "\n\n".join([f"--- File: {row.path} ---\n{row.Chunk.content}" for row in chunks_data])
+    chunks_text = "\n\n".join([f"--- File: {s['path']} ---\n{s['content']}" for s in sources_data])
     
     prompt = f"""You are a senior software engineer helping a developer understand a codebase.
 
 Repository:
 {repo.name}
 
-Files:
+Relevant Files:
 {', '.join(file_paths)}
 
-Code Context:
+Relevant Code Context:
 {chunks_text}
 
-Question:
+User Question:
 {request.question}
 
 Provide:
@@ -179,11 +235,14 @@ Provide:
 4. Next Steps (if applicable)"""
 
     try:
+        if not settings.GEMINI_API_KEY:
+            raise ValueError("GEMINI_API_KEY is not configured")
+            
         client = genai.Client(api_key=settings.GEMINI_API_KEY)
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model=settings.CHAT_MODEL,
             contents=prompt,
         )
-        return AskResponse(answer=response.text)
+        return AskResponse(answer=response.text, sources=sources_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

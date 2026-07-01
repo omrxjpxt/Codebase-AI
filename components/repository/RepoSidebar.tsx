@@ -2,12 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, FolderOpen, GitBranch, Settings } from "lucide-react";
-import { Repository } from "@/lib/api";
+import { useState } from "react";
+import { MessageSquare, FolderOpen, GitBranch, Settings, Plus, X } from "lucide-react";
+import { Repository, ChatSession } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 interface RepoSidebarProps {
   repo: Repository;
+  chatSessions: ChatSession[];
+  activeSessionId: string | null;
+  onSelectSession: (id: string) => void;
+  onNewSession: () => void;
+  onRenameSession: (id: string, newTitle: string) => void;
+  onDeleteSession: (id: string) => void;
 }
 
 const navItems = [
@@ -17,9 +24,21 @@ const navItems = [
   { icon: Settings, label: "Settings", key: "settings" },
 ];
 
-export default function RepoSidebar({ repo }: RepoSidebarProps) {
+export default function RepoSidebar({ 
+  repo, 
+  chatSessions, 
+  activeSessionId, 
+  onSelectSession, 
+  onNewSession,
+  onRenameSession,
+  onDeleteSession
+}: RepoSidebarProps) {
   const pathname = usePathname();
   const activeKey = "chat"; // default
+  
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+
 
   return (
     <div className="w-[200px] flex-shrink-0 h-full bg-[#09090B] border-r border-[#27272A] flex flex-col">
@@ -61,6 +80,80 @@ export default function RepoSidebar({ repo }: RepoSidebarProps) {
           );
         })}
       </nav>
+      {/* Recent Chats */}
+      <div className="mt-4 px-4 pb-2">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[10px] uppercase tracking-widest text-[#52525b] font-medium">
+            Recent Chats
+          </p>
+          <button 
+            onClick={onNewSession}
+            className="text-[#52525b] hover:text-[#FAFAFA] transition-colors"
+          >
+            <Plus size={14} />
+          </button>
+        </div>
+        
+        <div className="space-y-1 mt-2">
+          {chatSessions.length === 0 ? (
+            <p className="text-[12px] text-[#52525b] italic">No recent chats.</p>
+          ) : (
+            chatSessions.map((session) => (
+              <div 
+                key={session.id}
+                className={cn(
+                  "group flex items-center justify-between px-2.5 py-1.5 rounded-[6px] text-[12px] cursor-pointer transition-colors",
+                  activeSessionId === session.id 
+                    ? "bg-[#111113] text-[#FAFAFA] border border-[#27272A]" 
+                    : "text-[#A1A1AA] hover:bg-[#111113] hover:text-[#FAFAFA] border border-transparent"
+                )}
+                onClick={() => onSelectSession(session.id)}
+              >
+                {editingId === session.id ? (
+                  <input
+                    type="text"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    onBlur={() => {
+                      if (editTitle.trim()) onRenameSession(session.id, editTitle);
+                      setEditingId(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        if (editTitle.trim()) onRenameSession(session.id, editTitle);
+                        setEditingId(null);
+                      }
+                      if (e.key === "Escape") setEditingId(null);
+                    }}
+                    className="bg-transparent border-none outline-none w-full text-[#FAFAFA]"
+                    autoFocus
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                ) : (
+                  <span className="truncate flex-1">{session.title}</span>
+                )}
+                
+                {!editingId && (
+                  <div className="hidden group-hover:flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setEditTitle(session.title); setEditingId(session.id); }}
+                      className="text-[#52525b] hover:text-[#FAFAFA]"
+                    >
+                      <Settings size={12} />
+                    </button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); onDeleteSession(session.id); }}
+                      className="text-[#52525b] hover:text-red-400"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
     </div>
   );
 }

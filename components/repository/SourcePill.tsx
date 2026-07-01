@@ -1,12 +1,11 @@
 "use client";
 
 import { File } from "lucide-react";
-import { SourceFile } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 interface SourcePillProps {
-  source: SourceFile;
-  onClick?: (source: SourceFile) => void;
+  source: any;
+  onClick?: (source: any) => void;
   className?: string;
 }
 
@@ -31,12 +30,17 @@ export default function SourcePill({ source, onClick, className }: SourcePillPro
         size={12}
         className={cn(
           "flex-shrink-0",
-          langColors[source.language] ?? "text-[#52525b]"
+          source.language ? langColors[source.language] ?? "text-[#52525b]" : "text-[#52525b]"
         )}
-      />
-      <span className="text-[#A1A1AA] group-hover:text-[#FAFAFA] transition-colors">
-        {source.name}
+    />
+    <span className="text-[#A1A1AA] group-hover:text-[#FAFAFA] transition-colors">
+      {source.file || source.name}
+    </span>
+    {source.score !== undefined && (
+      <span className="text-[10px] text-[#52525b] ml-1 bg-[#18181b] px-1.5 py-0.5 rounded-[4px]">
+        {(source.score * 100).toFixed(1)}%
       </span>
-    </button>
+    )}
+  </button>
   );
 }

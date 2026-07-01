@@ -12,7 +12,8 @@ class Repository(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
-    status: Mapped[str] = mapped_column(String, default="processing") # e.g., 'processing', 'completed', 'failed'
+    status: Mapped[str] = mapped_column(String, default="processing") # e.g., 'processing', 'embedding', 'indexed', 'failed'
+    error_message: Mapped[str | None] = mapped_column(String, nullable=True)
     upload_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     github_url: Mapped[str | None] = mapped_column(String, nullable=True)
 
