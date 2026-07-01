@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Github } from "lucide-react";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -50,7 +51,7 @@ export default function SignupPage() {
 
     setIsLoading(true);
     try {
-      const response = await fetch("http://127.0.0.1:8000/auth/register", {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: form.email, password: form.password }),

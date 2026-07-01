@@ -34,7 +34,7 @@ export interface ChatMessage {
 
 export interface ChatSection {
   title: string;
-  content: string;
+  content?: string;
   items?: string[];
 }
 

@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy import String, DateTime, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
+from pgvector.sqlalchemy import Vector
 
 from app.db.base import Base
 
@@ -16,8 +17,9 @@ class Chunk(Base):
     metadata_: Mapped[dict] = mapped_column("metadata", JSONB, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
-    # Placeholder for future Phase:
-    # embedding: Mapped[list[float] | None] = mapped_column(Vector(1536), nullable=True)
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(768), nullable=True)
+    embedding_model: Mapped[str | None] = mapped_column(String, nullable=True)
+    embedding_created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     repository = relationship("Repository", back_populates="chunks")
     file = relationship("File", back_populates="chunks")

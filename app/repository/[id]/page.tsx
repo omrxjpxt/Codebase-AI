@@ -1,12 +1,25 @@
 "use client";
 
-import { useState, use, useEffect } from "react";
+import { useState, use, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { History, Loader2, Sparkles } from "lucide-react";
 import RepoSidebar from "@/components/repository/RepoSidebar";
 import ChatMessage from "@/components/repository/ChatMessage";
 import ChatInput from "@/components/repository/ChatInput";
-import { fetchApi, askRepositoryQuestion, RepositoryDetail, ChatMessageType } from "@/lib/api";
+import SourceViewerModal from "@/components/repository/SourceViewerModal";
+import { 
+  fetchApi, 
+  reindexRepository, 
+  RepositoryDetail, 
+  ChatMessageType,
+  ChatSession,
+  getChatSessions,
+  createChatSession,
+  getChatSessionDetail,
+  updateChatSession,
+  deleteChatSession,
+  API_BASE_URL
+} from "@/lib/api";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -22,8 +35,18 @@ export default function RepositoryPage({ params }: PageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [isStreaming, setIsStreaming] = useState(false);
+
+  // Source Viewer state
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
+  const [viewerSource, setViewerSource] = useState<any>(null);
+
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const loadRepo = async () => {
@@ -35,7 +58,6 @@ export default function RepositoryPage({ params }: PageProps) {
 
       setIsLoading(true);
       try {
-        console.log("Repository ID:", id);
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         if (!uuidRegex.test(id)) {
           setError("Invalid repository ID.");
@@ -46,7 +68,15 @@ export default function RepositoryPage({ params }: PageProps) {
         const repoData = await fetchApi(`/repositories/${id}`);
         setRepo(repoData);
 
-        // Simulated follow-up questions
+        const sessions = await getChatSessions(id);
+        setChatSessions(sessions);
+        
+        if (sessions.length > 0) {
+          loadSession(sessions[0].id);
+        } else {
+          // If initialQuery is present, we'll create a session in handleSend
+        }
+
         setSuggestions([
           "Explain the architecture",
           "What dependencies does this use?",
@@ -54,8 +84,7 @@ export default function RepositoryPage({ params }: PageProps) {
         ]);
 
         if (initialQuery) {
-          // Process initial query if provided via dashboard
-          handleSend(initialQuery);
+          setTimeout(() => handleSend(initialQuery), 500);
         }
       } catch (err: any) {
         const msg = err.message || "";
@@ -70,38 +99,171 @@ export default function RepositoryPage({ params }: PageProps) {
     };
 
     loadRepo();
+    
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [id, router]);
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isStreaming]);
+
+  const loadSession = async (sessionId: string) => {
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    setIsStreaming(false);
+    
+    try {
+      const detail = await getChatSessionDetail(sessionId);
+      setActiveSessionId(detail.id);
+      setMessages(detail.messages.map(m => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        timestamp: m.created_at || "",
+        sources: [] // We might need to persist sources in DB later, for now leave empty on reload
+      })));
+    } catch (err) {
+      console.error("Failed to load session", err);
+    }
+  };
+
+  const handleNewSession = async () => {
+    try {
+      const session = await createChatSession(id, "New Chat");
+      setChatSessions(prev => [session, ...prev]);
+      setActiveSessionId(session.id);
+      setMessages([]);
+    } catch (err) {
+      console.error("Failed to create session", err);
+    }
+  };
+
+  const handleRenameSession = async (sessionId: string, newTitle: string) => {
+    try {
+      const updated = await updateChatSession(sessionId, newTitle);
+      setChatSessions(prev => prev.map(s => s.id === sessionId ? updated : s));
+    } catch (err) {
+      console.error("Failed to rename session", err);
+    }
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    try {
+      await deleteChatSession(sessionId);
+      setChatSessions(prev => prev.filter(s => s.id !== sessionId));
+      if (activeSessionId === sessionId) {
+        setMessages([]);
+        setActiveSessionId(null);
+      }
+    } catch (err) {
+      console.error("Failed to delete session", err);
+    }
+  };
+
   const handleSend = async (text: string) => {
+    if (isStreaming) return;
+    
+    let currentSessionId = activeSessionId;
+    if (!currentSessionId) {
+      const session = await createChatSession(id, text.slice(0, 30) + (text.length > 30 ? "..." : ""));
+      setChatSessions(prev => [session, ...prev]);
+      setActiveSessionId(session.id);
+      currentSessionId = session.id;
+    }
+
     const userMsg: ChatMessageType = {
       id: `msg-${Date.now()}-user`,
       role: "user",
       content: text,
       timestamp: new Date().toISOString(),
     };
-    const tempAiId = `msg-${Date.now()}-ai-loading`;
+    const aiMsgId = `msg-${Date.now()}-ai`;
     const aiMsg: ChatMessageType = {
-      id: tempAiId,
+      id: aiMsgId,
       role: "assistant",
-      content: "Analyzing repository...",
+      content: "", // Starts empty
       timestamp: new Date().toISOString(),
+      sources: []
     };
+    
     setMessages((prev) => [...prev, userMsg, aiMsg]);
+    setIsStreaming(true);
+
+    abortControllerRef.current = new AbortController();
 
     try {
-      const response = await askRepositoryQuestion(id, text);
-      setMessages((prev) => 
-        prev.map((msg) => 
-          msg.id === tempAiId ? { ...msg, content: response.answer, id: `msg-${Date.now()}-ai` } : msg
-        )
-      );
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_BASE_URL}/repositories/chat-sessions/${currentSessionId}/ask`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ question: text }),
+        signal: abortControllerRef.current.signal
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to stream: ${res.statusText}`);
+      }
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder("utf-8");
+
+      if (!reader) throw new Error("No reader");
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunkStr = decoder.decode(value, { stream: true });
+        const lines = chunkStr.split('\n').filter(l => l.trim() !== "");
+        
+        for (const line of lines) {
+          try {
+            const data = JSON.parse(line);
+            if (data.type === "sources") {
+              setMessages(prev => prev.map(m => 
+                m.id === aiMsgId ? { ...m, sources: data.data } : m
+              ));
+            } else if (data.type === "chunk") {
+              setMessages(prev => prev.map(m => 
+                m.id === aiMsgId ? { ...m, content: m.content + data.text } : m
+              ));
+            } else if (data.type === "error") {
+              setMessages(prev => prev.map(m => 
+                m.id === aiMsgId ? { ...m, content: m.content + `\n\n[Error: ${data.message}]` } : m
+              ));
+            }
+          } catch (e) {
+            console.error("Failed to parse stream line:", line);
+          }
+        }
+      }
     } catch (err: any) {
-      setMessages((prev) => 
-        prev.map((msg) => 
-          msg.id === tempAiId ? { ...msg, content: `Error: ${err.message || 'Failed to get an answer.'}` } : msg
-        )
-      );
+      if (err.name !== 'AbortError') {
+        setMessages((prev) => 
+          prev.map((msg) => 
+            msg.id === aiMsgId ? { ...msg, content: msg.content + `\n\n[Stream Error: ${err.message}]` } : msg
+          )
+        );
+      }
+    } finally {
+      setIsStreaming(false);
+      abortControllerRef.current = null;
     }
+  };
+
+  const handleSourceClick = (source: any) => {
+    setViewerSource(source);
+    setIsViewerOpen(true);
   };
 
   if (isLoading) {
@@ -129,14 +291,30 @@ export default function RepositoryPage({ params }: PageProps) {
     );
   }
 
+  const handleReindex = async () => {
+    try {
+      const updatedRepo = await reindexRepository(id);
+      setRepo(prev => prev ? { ...prev, ...updatedRepo } : prev);
+      setError("");
+    } catch (err: any) {
+      alert(`Failed to re-index: ${err.message}`);
+    }
+  };
+
   const dateStr = new Date(repo.upload_date).toLocaleDateString();
 
   return (
     <div className="flex h-screen bg-[#09090B] overflow-hidden">
-      {/* Repo left sidebar */}
-      <RepoSidebar repo={repo} />
+      <RepoSidebar 
+        repo={repo} 
+        chatSessions={chatSessions}
+        activeSessionId={activeSessionId}
+        onSelectSession={loadSession}
+        onNewSession={handleNewSession}
+        onRenameSession={handleRenameSession}
+        onDeleteSession={handleDeleteSession}
+      />
 
-      {/* Main chat area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="flex items-center justify-between px-6 h-14 border-b border-[#27272A] bg-[#09090B] flex-shrink-0">
@@ -163,12 +341,17 @@ export default function RepositoryPage({ params }: PageProps) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button className="w-8 h-8 rounded-[8px] flex items-center justify-center text-[#52525b] hover:text-[#A1A1AA] hover:bg-[#111113] transition-all">
-              <History size={16} />
+            {repo.status === 'failed' && (
+              <span className="text-red-400 text-[12px] mr-2" title={repo.error_message || ""}>
+                Indexing Failed
+              </span>
+            )}
+            <button 
+              onClick={handleReindex}
+              className="px-3 py-1.5 rounded-[8px] border border-[#27272A] text-[#A1A1AA] text-[12px] hover:text-[#FAFAFA] hover:bg-[#111113] transition-all mr-2"
+            >
+              Re-index
             </button>
-            <div className="w-7 h-7 rounded-full bg-[#27272A] border border-[#3f3f46] flex items-center justify-center text-[11px] font-medium text-[#A1A1AA]">
-              O
-            </div>
           </div>
         </header>
 
@@ -176,7 +359,6 @@ export default function RepositoryPage({ params }: PageProps) {
         <div className="flex flex-1 overflow-hidden">
           {/* Chat scroll area */}
           <div className="flex-1 flex flex-col overflow-hidden relative">
-            {/* Messages */}
             <div className="flex-1 overflow-y-auto px-8 py-8 space-y-10">
               {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center">
@@ -204,83 +386,42 @@ export default function RepositoryPage({ params }: PageProps) {
               ) : (
                 <>
                   {messages.map((msg) => (
-                    <ChatMessage key={msg.id} message={msg} />
+                    <ChatMessage 
+                      key={msg.id} 
+                      message={msg} 
+                      onSourceClick={handleSourceClick}
+                    />
                   ))}
-
-                  {/* Follow-up suggestions at bottom of chat */}
-                  <div className="pt-4">
-                    <p className="text-[11px] uppercase tracking-widest text-[#52525b] mb-3 font-medium">
-                      Follow Up Questions
-                    </p>
-                    <div className="flex flex-col gap-2">
-                      {suggestions.slice(0, 3).map((q, i) => (
-                        <button
-                          key={i}
-                          onClick={() => handleSend(q)}
-                          className="text-left px-4 py-2.5 rounded-[8px] border border-[#27272A] text-[13px] text-[#A1A1AA] hover:text-[#FAFAFA] hover:border-[#3f3f46] hover:bg-[#111113] transition-all w-fit"
-                        >
-                          {q}
-                        </button>
-                      ))}
+                  
+                  {isStreaming && (
+                    <div className="flex items-center gap-2 text-[#A1A1AA] text-[12px] animate-pulse">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#A1A1AA] animate-bounce" style={{ animationDelay: "0ms" }} />
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#A1A1AA] animate-bounce" style={{ animationDelay: "150ms" }} />
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#A1A1AA] animate-bounce" style={{ animationDelay: "300ms" }} />
                     </div>
-                  </div>
+                  )}
+
+                  <div ref={messagesEndRef} />
                 </>
               )}
             </div>
 
             {/* Fixed chat input */}
             <div className="px-8 pb-6 flex-shrink-0">
-              <ChatInput onSend={handleSend} />
-            </div>
-          </div>
-
-          {/* Right sidebar */}
-          <div className="w-[220px] flex-shrink-0 border-l border-[#27272A] overflow-y-auto p-5">
-            {/* Repository Context */}
-            <div className="mb-8">
-              <p className="text-[10px] uppercase tracking-widest text-[#52525b] font-medium mb-4">
-                Repository Context
-              </p>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[13px] text-[#A1A1AA]">Files</span>
-                  <span className="text-[13px] text-[#FAFAFA] font-medium">{repo.file_count || 0}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[13px] text-[#A1A1AA]">Chunks</span>
-                  <span className="text-[13px] text-[#FAFAFA] font-medium">{repo.chunk_count || 0}</span>
-                </div>
-                <div className="flex items-start justify-between gap-2">
-                  <span className="text-[13px] text-[#A1A1AA]">Languages</span>
-                  <span className="text-[13px] text-[#FAFAFA] font-medium text-right">
-                    {repo.languages && repo.languages.length > 0 ? repo.languages.join(", ") : "Unknown"}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Recent Files */}
-            <div className="mb-8">
-              <p className="text-[10px] uppercase tracking-widest text-[#52525b] font-medium mb-3">
-                Recent Files
-              </p>
-              <div className="space-y-1.5">
-                <p className="text-[12px] text-[#52525b] italic">No files accessed recently.</p>
-              </div>
-            </div>
-
-            {/* Recent Questions */}
-            <div>
-              <p className="text-[10px] uppercase tracking-widest text-[#52525b] font-medium mb-3">
-                Recent Questions
-              </p>
-              <div className="space-y-2">
-                 <p className="text-[12px] text-[#52525b] italic">No recent questions.</p>
-              </div>
+              <ChatInput onSend={handleSend} disabled={isStreaming} />
             </div>
           </div>
         </div>
       </div>
+      
+      <SourceViewerModal
+        isOpen={isViewerOpen}
+        onClose={() => setIsViewerOpen(false)}
+        repositoryId={id}
+        fileId={viewerSource?.file_id}
+        startLine={viewerSource?.start_line}
+        endLine={viewerSource?.end_line}
+      />
     </div>
   );
 }

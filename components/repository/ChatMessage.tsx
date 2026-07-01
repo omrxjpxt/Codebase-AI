@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 
 interface ChatMessageProps {
   message: ChatMessageType;
+  onSourceClick?: (source: any) => void;
 }
 
 function renderContent(text: string): React.ReactNode {
@@ -22,7 +23,7 @@ function renderContent(text: string): React.ReactNode {
   });
 }
 
-export default function ChatMessage({ message }: ChatMessageProps) {
+export default function ChatMessage({ message, onSourceClick }: ChatMessageProps) {
   if (message.role === "user") {
     return (
       <div className="flex items-start gap-3 animate-fade-in">
@@ -99,7 +100,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
             </p>
             <div className="flex flex-wrap gap-2">
               {message.sources.map((source, sIdx) => (
-                <SourcePill key={sIdx} source={source} />
+                <SourcePill key={sIdx} source={source} onClick={onSourceClick} />
               ))}
             </div>
           </div>
