@@ -84,6 +84,18 @@ async def list_chat_sessions(
     result = await db.execute(stmt)
     return result.scalars().all()
 
+@router.delete("/chat-sessions/all", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_all_chat_sessions(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = select(ChatSession).where(ChatSession.user_id == current_user.id)
+    result = await db.execute(stmt)
+    sessions = result.scalars().all()
+    for session in sessions:
+        await db.delete(session)
+    await db.commit()
+
 @router.get("/chat-sessions/{session_id}", response_model=ChatSessionDetailResponse)
 async def get_chat_session(
     session_id: uuid.UUID,
@@ -137,6 +149,7 @@ async def delete_chat_session(
         
     await db.delete(session)
     await db.commit()
+
 
 @router.post("/chat-sessions/{session_id}/ask")
 async def ask_chat_session(

@@ -4,6 +4,7 @@ import tempfile
 import uuid
 import asyncio
 from typing import List
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
@@ -49,6 +50,34 @@ async def upload_repository(
             
         # Process and store
         repo = await process_and_store_repository(db, current_user.id, repo_name, temp_path)
+        return repo
+    finally:
+        if settings.DELETE_UPLOADED_ZIP_AFTER_INDEXING and os.path.exists(temp_path):
+            os.remove(temp_path)
+
+class GithubImportRequest(BaseModel):
+    github_url: str
+
+@router.post("/github-import", response_model=RepositoryResponse, status_code=status.HTTP_201_CREATED)
+async def import_github_repository(
+    request: GithubImportRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    from app.services.github_service import download_github_repo
+    
+    try:
+        temp_path = await download_github_repo(request.github_url)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+        
+    repo_name = request.github_url.rstrip('/').split('/')[-1]
+    
+    try:
+        # Process and store
+        repo = await process_and_store_repository(db, current_user.id, repo_name, temp_path)
+        repo.github_url = request.github_url
+        await db.commit()
         return repo
     finally:
         if settings.DELETE_UPLOADED_ZIP_AFTER_INDEXING and os.path.exists(temp_path):
@@ -190,6 +219,27 @@ async def reindex_repository(
     asyncio.create_task(generate_embeddings_for_repo(repo.id))
     
     await db.refresh(repo)
+    return repo
+
+
+@router.post("/{id}/generate-summary", response_model=RepositoryResponse)
+async def generate_repository_summary_endpoint(
+    id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = select(Repository).where(Repository.id == id, Repository.user_id == current_user.id)
+    result = await db.execute(stmt)
+    repo = result.scalar_one_or_none()
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found")
+        
+    if not settings.GEMINI_API_KEY:
+        raise HTTPException(status_code=400, detail="GEMINI_API_KEY is not configured")
+        
+    from app.services.repository_service import generate_repository_summary
+    asyncio.create_task(generate_repository_summary(repo.id))
+    
     return repo
 
 

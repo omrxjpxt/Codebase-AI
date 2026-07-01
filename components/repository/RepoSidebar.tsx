@@ -11,6 +11,8 @@ interface RepoSidebarProps {
   repo: Repository;
   chatSessions: ChatSession[];
   activeSessionId: string | null;
+  activeTab: string;
+  onSelectTab: (tab: string) => void;
   onSelectSession: (id: string) => void;
   onNewSession: () => void;
   onRenameSession: (id: string, newTitle: string) => void;
@@ -19,22 +21,22 @@ interface RepoSidebarProps {
 
 const navItems = [
   { icon: MessageSquare, label: "AI Chat", key: "chat" },
-  { icon: FolderOpen, label: "Files Explorer", key: "files" },
-  { icon: GitBranch, label: "Architecture", key: "architecture" },
-  { icon: Settings, label: "Settings", key: "settings" },
+  { icon: FolderOpen, label: "Explorer", key: "files" },
+  { icon: GitBranch, label: "Overview", key: "overview" },
 ];
 
 export default function RepoSidebar({ 
   repo, 
   chatSessions, 
   activeSessionId, 
+  activeTab,
+  onSelectTab,
   onSelectSession, 
   onNewSession,
   onRenameSession,
   onDeleteSession
 }: RepoSidebarProps) {
   const pathname = usePathname();
-  const activeKey = "chat"; // default
   
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -63,10 +65,11 @@ export default function RepoSidebar({
       {/* Nav */}
       <nav className="flex-1 px-2 py-3 space-y-0.5">
         {navItems.map(({ icon: Icon, label, key }) => {
-          const isActive = key === activeKey;
+          const isActive = key === activeTab;
           return (
             <button
               key={key}
+              onClick={() => onSelectTab(key)}
               className={cn(
                 "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-[8px] text-[13px] transition-all text-left",
                 isActive

@@ -22,15 +22,24 @@ export const metadata: Metadata = {
   },
 };
 
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import GlobalSearch from "@/components/layout/GlobalSearch";
+import { Toaster } from "sonner";
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans bg-[#09090B] text-[#FAFAFA] antialiased`}>
-        {children}
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+          <GlobalSearch>
+            {children}
+          </GlobalSearch>
+          <Toaster theme="dark" position="bottom-right" />
+        </ThemeProvider>
       </body>
     </html>
   );
