@@ -7,6 +7,7 @@ import RepoSidebar from "@/components/repository/RepoSidebar";
 import ChatMessage from "@/components/repository/ChatMessage";
 import ChatInput from "@/components/repository/ChatInput";
 import SourceViewerModal from "@/components/repository/SourceViewerModal";
+import FileExplorer from "@/components/repository/FileExplorer";
 import { 
   fetchApi, 
   reindexRepository, 
@@ -40,6 +41,7 @@ export default function RepositoryPage({ params }: PageProps) {
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("chat");
 
   // Source Viewer state
   const [isViewerOpen, setIsViewerOpen] = useState(false);
@@ -309,6 +311,8 @@ export default function RepositoryPage({ params }: PageProps) {
         repo={repo} 
         chatSessions={chatSessions}
         activeSessionId={activeSessionId}
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
         onSelectSession={loadSession}
         onNewSession={handleNewSession}
         onRenameSession={handleRenameSession}
@@ -355,62 +359,107 @@ export default function RepositoryPage({ params }: PageProps) {
           </div>
         </header>
 
-        {/* Chat + right sidebar */}
+        {/* Main Content Area */}
         <div className="flex flex-1 overflow-hidden">
-          {/* Chat scroll area */}
-          <div className="flex-1 flex flex-col overflow-hidden relative">
-            <div className="flex-1 overflow-y-auto px-8 py-8 space-y-10">
-              {messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-center">
-                  <div className="w-16 h-16 bg-[#1a1a1d] rounded-full flex items-center justify-center mb-6">
-                    <Sparkles size={32} className="text-[#A1A1AA]" />
-                  </div>
-                  <h3 className="text-[20px] font-semibold text-[#FAFAFA] mb-2">
-                    Ask anything about {repo.name}
-                  </h3>
-                  <p className="text-[14px] text-[#A1A1AA] max-w-md">
-                    CodeBase AI has analyzed your repository. You can now ask questions about the architecture, logic, or request specific code explanations.
-                  </p>
-                  <div className="mt-8 flex flex-wrap justify-center gap-2 max-w-2xl">
-                    {suggestions.map((q, i) => (
-                      <button
-                        key={i}
-                        onClick={() => handleSend(q)}
-                        className="px-4 py-2 rounded-[8px] border border-[#27272A] bg-[#111113] text-[13px] text-[#A1A1AA] hover:text-[#FAFAFA] hover:border-[#3f3f46] transition-all"
-                      >
-                        {q}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <>
-                  {messages.map((msg) => (
-                    <ChatMessage 
-                      key={msg.id} 
-                      message={msg} 
-                      onSourceClick={handleSourceClick}
-                    />
-                  ))}
-                  
-                  {isStreaming && (
-                    <div className="flex items-center gap-2 text-[#A1A1AA] text-[12px] animate-pulse">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#A1A1AA] animate-bounce" style={{ animationDelay: "0ms" }} />
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#A1A1AA] animate-bounce" style={{ animationDelay: "150ms" }} />
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#A1A1AA] animate-bounce" style={{ animationDelay: "300ms" }} />
+          {activeTab === "chat" && (
+            <div className="flex-1 flex flex-col overflow-hidden relative">
+              <div className="flex-1 overflow-y-auto px-8 py-8 space-y-10">
+                {messages.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center">
+                    <div className="w-16 h-16 bg-[#1a1a1d] rounded-full flex items-center justify-center mb-6">
+                      <Sparkles size={32} className="text-[#A1A1AA]" />
                     </div>
-                  )}
+                    <h3 className="text-[20px] font-semibold text-[#FAFAFA] mb-2">
+                      Ask anything about {repo.name}
+                    </h3>
+                    <p className="text-[14px] text-[#A1A1AA] max-w-md">
+                      CodeBase AI has analyzed your repository. You can now ask questions about the architecture, logic, or request specific code explanations.
+                    </p>
+                    <div className="mt-8 flex flex-wrap justify-center gap-2 max-w-2xl">
+                      {suggestions.map((q, i) => (
+                        <button
+                          key={i}
+                          onClick={() => handleSend(q)}
+                          className="px-4 py-2 rounded-[8px] border border-[#27272A] bg-[#111113] text-[13px] text-[#A1A1AA] hover:text-[#FAFAFA] hover:border-[#3f3f46] transition-all"
+                        >
+                          {q}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {messages.map((msg) => (
+                      <ChatMessage 
+                        key={msg.id} 
+                        message={msg} 
+                        onSourceClick={handleSourceClick}
+                      />
+                    ))}
+                    
+                    {isStreaming && (
+                      <div className="flex items-center gap-2 text-[#A1A1AA] text-[12px] animate-pulse">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#A1A1AA] animate-bounce" style={{ animationDelay: "0ms" }} />
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#A1A1AA] animate-bounce" style={{ animationDelay: "150ms" }} />
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#A1A1AA] animate-bounce" style={{ animationDelay: "300ms" }} />
+                      </div>
+                    )}
 
-                  <div ref={messagesEndRef} />
-                </>
-              )}
-            </div>
+                    <div ref={messagesEndRef} />
+                  </>
+                )}
+              </div>
 
-            {/* Fixed chat input */}
-            <div className="px-8 pb-6 flex-shrink-0">
-              <ChatInput onSend={handleSend} disabled={isStreaming} />
+              <div className="px-8 pb-6 flex-shrink-0">
+                <ChatInput onSend={handleSend} disabled={isStreaming} />
+              </div>
             </div>
-          </div>
+          )}
+
+          {activeTab === "overview" && (
+            <div className="flex-1 overflow-y-auto px-8 py-8">
+              <div className="max-w-3xl mx-auto">
+                <div className="flex items-center justify-between mb-8">
+                  <h2 className="text-[24px] font-bold text-[#FAFAFA]">Repository Overview</h2>
+                  <button 
+                    onClick={async () => {
+                      try {
+                        const updatedRepo = await fetchApi(`/repositories/${repo.id}/generate-summary`, { method: "POST" });
+                        setRepo(prev => prev ? { ...prev, ...updatedRepo } : prev);
+                      } catch (e) {
+                        // error handled in fetchApi wrapper or toast
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-[8px] bg-[#111113] border border-[#27272A] text-[#A1A1AA] text-[12px] hover:text-[#FAFAFA] transition-all"
+                  >
+                    Regenerate Summary
+                  </button>
+                </div>
+
+                {repo.summary ? (
+                  <div className="prose prose-invert max-w-none text-[14px]">
+                    <div dangerouslySetInnerHTML={{ __html: repo.summary.replace(/\n/g, '<br/>') }} />
+                  </div>
+                ) : (
+                  <div className="text-center py-20 text-[#A1A1AA] text-[14px]">
+                    No summary generated yet. Click 'Regenerate Summary' to create one.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "files" && (
+            <div className="flex-1 overflow-y-auto px-8 py-8 flex">
+              <FileExplorer 
+                repositoryId={repo.id} 
+                onFileClick={(fileId) => {
+                  setViewerSource({ file_id: fileId });
+                  setIsViewerOpen(true);
+                }} 
+              />
+            </div>
+          )}
         </div>
       </div>
       

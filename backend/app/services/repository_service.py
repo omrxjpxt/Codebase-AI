@@ -5,6 +5,7 @@ import asyncio
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from google import genai
 
 from app.models.repository import Repository
 from app.models.file import File
@@ -16,6 +17,58 @@ from app.db.database import AsyncSessionLocal
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+async def generate_repository_summary(repo_id: uuid.UUID):
+    async with AsyncSessionLocal() as db:
+        stmt = select(Repository).where(Repository.id == repo_id)
+        repo = (await db.execute(stmt)).scalar_one_or_none()
+        if not repo or not settings.GEMINI_API_KEY:
+            return
+            
+        # Get file paths to understand project structure
+        file_stmt = select(File.path, File.content).where(File.repository_id == repo_id)
+        files = (await db.execute(file_stmt)).all()
+        
+        tree = [f.path for f in files]
+        
+        # Optionally extract key configuration files (package.json, pyproject.toml, etc.)
+        config_contents = ""
+        key_files = {"package.json", "requirements.txt", "pyproject.toml", "README.md", "docker-compose.yml"}
+        for f in files:
+            if f.path.split("/")[-1] in key_files:
+                config_contents += f"\n\n--- {f.path} ---\n{f.content[:2000]}" # Limiting size per config file
+                
+        prompt = f"""You are an expert software architect. Provide a high-level summary of the following repository.
+        
+Repository Name: {repo.name}
+
+File Structure:
+{chr(10).join(tree[:200])} {len(tree) > 200 and '... (truncated)' or ''}
+
+Key Files (Partial):
+{config_contents}
+
+Please output a comprehensive Markdown summary including:
+- **Project Overview** (what the project is)
+- **Tech Stack** (languages, frameworks, databases inferred)
+- **Architecture Overview**
+- **Main Folders** and their purposes
+- **Entry Points**
+- **External Services** / Configurations detected
+"""
+        try:
+            client = genai.Client(api_key=settings.GEMINI_API_KEY)
+            response = client.models.generate_content(
+                model=settings.CHAT_MODEL,
+                contents=prompt,
+            )
+            
+            repo.summary = response.text
+            await db.commit()
+            logger.info(f"Summary generated for repo {repo_id}")
+        except Exception as e:
+            logger.error(f"Failed to generate summary for repo {repo_id}: {e}")
+            await db.rollback()
 
 async def generate_embeddings_for_repo(repo_id: uuid.UUID):
     async with AsyncSessionLocal() as db:
@@ -58,6 +111,10 @@ async def generate_embeddings_for_repo(repo_id: uuid.UUID):
             repo.status = "indexed"
             repo.error_message = None
             await db.commit()
+            
+            # Fire and forget summary generation if API key is present
+            if settings.GEMINI_API_KEY:
+                asyncio.create_task(generate_repository_summary(repo_id))
             
         except Exception as e:
             logger.error(f"Failed to generate embeddings for repo {repo_id}: {e}")

@@ -14,6 +14,7 @@ class Repository(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
     status: Mapped[str] = mapped_column(String, default="processing") # e.g., 'processing', 'embedding', 'indexed', 'failed'
     error_message: Mapped[str | None] = mapped_column(String, nullable=True)
+    summary: Mapped[str | None] = mapped_column(String, nullable=True)
     upload_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     github_url: Mapped[str | None] = mapped_column(String, nullable=True)
 

@@ -33,3 +33,12 @@ app.include_router(chat.router)
 @app.get("/")
 async def root():
     return {"message": "Welcome to CodeBase AI API"}
+
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
+
+@app.get("/ready")
+async def readiness_check():
+    # Can be expanded to check DB connection
+    return {"status": "ready"}
