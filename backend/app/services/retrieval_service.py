@@ -13,19 +13,10 @@ from app.models.file import File
 
 logger = logging.getLogger(__name__)
 
+from app.services.gemini_service import gemini_service
+
 async def generate_query_embedding(question: str) -> list[float]:
-    try:
-        if not settings.GEMINI_API_KEY:
-            raise ValueError("GEMINI_API_KEY is not configured")
-        client = genai.Client(api_key=settings.GEMINI_API_KEY)
-        response = client.models.embed_content(
-            model=settings.EMBEDDING_MODEL,
-            contents=question,
-        )
-        return response.embeddings[0].values
-    except Exception as e:
-        logger.error(f"Error generating query embedding: {e}")
-        raise e
+    return await gemini_service.embed_content(text=question)
 
 async def retrieve_relevant_chunks(
     db: AsyncSession, 

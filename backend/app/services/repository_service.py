@@ -57,13 +57,13 @@ Please output a comprehensive Markdown summary including:
 - **External Services** / Configurations detected
 """
         try:
-            client = genai.Client(api_key=settings.GEMINI_API_KEY)
-            response = client.models.generate_content(
+            from app.services.gemini_service import gemini_service
+            response_text = await gemini_service.generate_content(
                 model=settings.CHAT_MODEL,
                 contents=prompt,
             )
             
-            repo.summary = response.text
+            repo.summary = response_text
             await db.commit()
             logger.info(f"Summary generated for repo {repo_id}")
         except Exception as e:

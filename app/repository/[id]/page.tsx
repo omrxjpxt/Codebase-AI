@@ -73,7 +73,10 @@ export default function RepositoryPage({ params }: PageProps) {
         const sessions = await getChatSessions(id);
         setChatSessions(sessions);
         
-        if (sessions.length > 0) {
+        const urlChatId = searchParams.get("chat");
+        if (urlChatId && sessions.some(s => s.id === urlChatId)) {
+          loadSession(urlChatId);
+        } else if (sessions.length > 0) {
           loadSession(sessions[0].id);
         } else {
           // If initialQuery is present, we'll create a session in handleSend

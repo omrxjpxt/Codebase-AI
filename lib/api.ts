@@ -141,6 +141,15 @@ export async function getChatSessions(repositoryId: string): Promise<ChatSession
   return await fetchApi(`/repositories/${repositoryId}/chat-sessions`);
 }
 
+export interface ChatSessionWithRepo extends ChatSession {
+  repository_name: string;
+  last_message_preview?: string | null;
+}
+
+export async function getAllChatSessions(): Promise<ChatSessionWithRepo[]> {
+  return await fetchApi(`/chat-sessions`);
+}
+
 export async function getChatSessionDetail(sessionId: string): Promise<ChatSessionDetail> {
   return await fetchApi(`/repositories/chat-sessions/${sessionId}`);
 }
