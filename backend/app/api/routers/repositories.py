@@ -285,14 +285,14 @@ Provide:
 4. Next Steps (if applicable)"""
 
     try:
-        if not settings.GEMINI_API_KEY:
-            raise ValueError("GEMINI_API_KEY is not configured")
-            
-        client = genai.Client(api_key=settings.GEMINI_API_KEY)
-        response = client.models.generate_content(
+        from app.services.gemini_service import gemini_service
+        response_text = await gemini_service.generate_content(
             model=settings.CHAT_MODEL,
             contents=prompt,
         )
-        return AskResponse(answer=response.text, sources=sources_data)
+        return AskResponse(answer=response_text, sources=sources_data)
     except Exception as e:
+        # Assuming gemini_service raises HTTPException, if not it will be caught here
+        if isinstance(e, HTTPException):
+            raise e
         raise HTTPException(status_code=500, detail=str(e))

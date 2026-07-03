@@ -58,7 +58,7 @@ export default function AppSidebar() {
       {/* Bottom: settings + avatar */}
       <div className="flex flex-col items-center gap-3">
         <Link
-          href="/dashboard/settings"
+          href="/settings"
           title="Settings"
           className="w-9 h-9 rounded-[8px] flex items-center justify-center text-[#52525b] hover:text-[#A1A1AA] hover:bg-[#111113] transition-all"
         >

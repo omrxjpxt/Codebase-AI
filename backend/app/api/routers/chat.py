@@ -197,25 +197,22 @@ Provide:
 3. Explanation
 4. Next Steps (if applicable)"""
 
-    if not settings.GEMINI_API_KEY:
-        raise HTTPException(status_code=500, detail="GEMINI_API_KEY is not configured")
-        
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    from app.services.gemini_service import gemini_service
     
     async def generate():
         try:
-            response_stream = client.models.generate_content_stream(
+            response_stream = gemini_service.generate_content_stream(
                 model=settings.CHAT_MODEL,
                 contents=prompt,
             )
             
-            yield json.dumps({"type": "sources", "data": sources_data}) + "\\n"
+            yield json.dumps({"type": "sources", "data": sources_data}) + "\n"
             
             full_text = ""
-            for chunk in response_stream:
-                if chunk.text:
-                    full_text += chunk.text
-                    yield json.dumps({"type": "chunk", "text": chunk.text}) + "\\n"
+            async for chunk_text in response_stream:
+                if chunk_text:
+                    full_text += chunk_text
+                    yield json.dumps({"type": "chunk", "text": chunk_text}) + "\n"
                     
             from app.db.database import AsyncSessionLocal
             async with AsyncSessionLocal() as local_db:
@@ -223,6 +220,11 @@ Provide:
                 local_db.add(assistant_msg)
                 await local_db.commit()
         except Exception as e:
-            yield json.dumps({"type": "error", "message": str(e)}) + "\\n"
+            # Check if it's an HTTPException from gemini_service to extract detail
+            from fastapi import HTTPException
+            if isinstance(e, HTTPException):
+                yield json.dumps({"type": "error", "message": str(e.detail)}) + "\n"
+            else:
+                yield json.dumps({"type": "error", "message": str(e)}) + "\n"
 
     return StreamingResponse(generate(), media_type="application/x-ndjson")
