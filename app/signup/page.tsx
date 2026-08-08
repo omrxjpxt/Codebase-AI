@@ -20,6 +20,7 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -28,7 +29,9 @@ export default function SignupPage() {
     } else {
       fetchApi("/auth/me")
         .then(() => router.push("/dashboard"))
-        .catch(() => {});
+        .catch(() => {
+          setIsCheckingAuth(false);
+        });
     }
   }, [router]);
 
@@ -83,6 +86,14 @@ export default function SignupPage() {
       setIsLoading(false);
     }
   };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-[#09090B] flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-[#27272A] border-t-[#FAFAFA] rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#09090B] flex flex-col">

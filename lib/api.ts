@@ -93,7 +93,7 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
 
     if (!response.ok) {
       if (response.status === 401) {
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && !['/login', '/signup', '/'].includes(window.location.pathname)) {
             localStorage.removeItem("token");
             window.location.href = "/login";
         }
