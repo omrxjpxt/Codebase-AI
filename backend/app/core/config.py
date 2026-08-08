@@ -12,6 +12,11 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE_MB: int = 200
     DELETE_UPLOADED_ZIP_AFTER_INDEXING: bool = True
     
+    GITHUB_CLIENT_ID: Optional[str] = None
+    GITHUB_CLIENT_SECRET: Optional[str] = None
+    FRONTEND_URL: str = "http://localhost:3000"
+    GITHUB_REDIRECT_URI: str = "http://localhost:8000/auth/github/callback"
+    
     LLM_PROVIDER: str = "gemini"
     CHAT_MODEL: str = "gemini-2.5-flash"
     EMBEDDING_MODEL: str = "text-embedding-004"

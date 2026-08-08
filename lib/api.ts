@@ -88,6 +88,7 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers,
+      credentials: "include",
     });
 
     if (!response.ok) {

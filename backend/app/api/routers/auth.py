@@ -1,5 +1,8 @@
 from datetime import timedelta
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
+from fastapi.responses import RedirectResponse
+import httpx
+import secrets
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -56,3 +59,113 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
 async def delete_user_me(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     await db.delete(current_user)
     await db.commit()
+
+@router.get("/github/login")
+async def github_login(response: Response):
+    if not settings.GITHUB_CLIENT_ID:
+        raise HTTPException(status_code=500, detail="GitHub Client ID not configured")
+        
+    state = secrets.token_urlsafe(32)
+    
+    github_auth_url = (
+        f"https://github.com/login/oauth/authorize"
+        f"?client_id={settings.GITHUB_CLIENT_ID}"
+        f"&redirect_uri={settings.GITHUB_REDIRECT_URI}"
+        f"&scope=user:email"
+        f"&state={state}"
+    )
+    
+    redirect = RedirectResponse(url=github_auth_url)
+    redirect.set_cookie(
+        key="oauth_state",
+        value=state,
+        httponly=True,
+        max_age=300,
+        secure=settings.ENVIRONMENT != "development",
+        samesite="lax"
+    )
+    return redirect
+
+@router.get("/github/callback")
+async def github_callback(request: Request, code: str, state: str, db: AsyncSession = Depends(get_db)):
+    oauth_state = request.cookies.get("oauth_state")
+    if not oauth_state or oauth_state != state:
+        raise HTTPException(status_code=400, detail="Invalid state parameter")
+        
+    if not settings.GITHUB_CLIENT_ID or not settings.GITHUB_CLIENT_SECRET:
+        raise HTTPException(status_code=500, detail="GitHub OAuth not configured")
+        
+    async with httpx.AsyncClient() as client:
+        # Get access token
+        token_res = await client.post(
+            "https://github.com/login/oauth/access_token",
+            headers={"Accept": "application/json"},
+            data={
+                "client_id": settings.GITHUB_CLIENT_ID,
+                "client_secret": settings.GITHUB_CLIENT_SECRET,
+                "code": code,
+                "redirect_uri": settings.GITHUB_REDIRECT_URI,
+            }
+        )
+        token_data = token_res.json()
+        access_token = token_data.get("access_token")
+        
+        if not access_token:
+            raise HTTPException(status_code=400, detail="Could not authenticate with GitHub")
+            
+        # Get user email
+        email_res = await client.get(
+            "https://api.github.com/user/emails",
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Accept": "application/vnd.github.v3+json",
+            }
+        )
+        
+        if email_res.status_code != 200:
+            raise HTTPException(status_code=400, detail="Failed to fetch GitHub emails")
+            
+        emails = email_res.json()
+        primary_email = None
+        for email_obj in emails:
+            if email_obj.get("primary") and email_obj.get("verified"):
+                primary_email = email_obj.get("email")
+                break
+                
+        if not primary_email:
+            for email_obj in emails:
+                if email_obj.get("verified"):
+                    primary_email = email_obj.get("email")
+                    break
+                    
+        if not primary_email:
+            raise HTTPException(status_code=400, detail="No verified email found on GitHub account")
+            
+    stmt = select(User).where(User.email == primary_email)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        hashed_password = get_password_hash(secrets.token_urlsafe(32))
+        user = User(email=primary_email, password_hash=hashed_password)
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+        
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    jwt_token = create_access_token(
+        data={"sub": user.email}, expires_delta=access_token_expires
+    )
+    
+    frontend_redirect = RedirectResponse(url=f"{settings.FRONTEND_URL}/dashboard")
+    frontend_redirect.set_cookie(
+        key="access_token",
+        value=jwt_token,
+        httponly=True,
+        secure=settings.ENVIRONMENT != "development",
+        samesite="lax",
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    )
+    frontend_redirect.delete_cookie("oauth_state")
+    
+    return frontend_redirect
