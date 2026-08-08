@@ -77,19 +77,26 @@ async def github_login(response: Response):
     
     redirect = RedirectResponse(url=github_auth_url)
     redirect.set_cookie(
-        key="oauth_state",
+        key="github_oauth_state",
         value=state,
         httponly=True,
-        max_age=300,
+        max_age=600,
         secure=settings.ENVIRONMENT != "development",
-        samesite="lax"
+        samesite="lax",
+        path="/"
     )
     return redirect
 
 @router.get("/github/callback")
-async def github_callback(request: Request, code: str, state: str, db: AsyncSession = Depends(get_db)):
-    oauth_state = request.cookies.get("oauth_state")
-    if not oauth_state or oauth_state != state:
+async def github_callback(request: Request, db: AsyncSession = Depends(get_db), code: str = None, state: str = None, error: str = None):
+    if error:
+        raise HTTPException(status_code=400, detail=f"GitHub OAuth error: {error}")
+        
+    oauth_state = request.cookies.get("github_oauth_state")
+    if not oauth_state or not state:
+        raise HTTPException(status_code=400, detail="Missing OAuth state")
+        
+    if not secrets.compare_digest(oauth_state, state):
         raise HTTPException(status_code=400, detail="Invalid state parameter")
         
     if not settings.GITHUB_CLIENT_ID or not settings.GITHUB_CLIENT_SECRET:
@@ -166,6 +173,6 @@ async def github_callback(request: Request, code: str, state: str, db: AsyncSess
         samesite="lax",
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
     )
-    frontend_redirect.delete_cookie("oauth_state")
+    frontend_redirect.delete_cookie("github_oauth_state", path="/")
     
     return frontend_redirect

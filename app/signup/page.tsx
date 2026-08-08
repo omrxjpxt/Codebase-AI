@@ -256,7 +256,7 @@ export default function SignupPage() {
 
           {/* GitHub */}
           <Link
-            href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/auth/github/login`}
+            href={`${API_BASE_URL}/auth/github/login`}
             id="github-signup-btn"
             className="w-full flex items-center justify-center gap-2.5 py-3 rounded-[10px] border border-[#27272A] text-[14px] text-[#FAFAFA] font-medium hover:bg-[#1a1a1d] hover:border-[#3f3f46] transition-all"
           >
