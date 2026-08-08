@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import AppSidebar from "@/components/layout/AppSidebar";
 import RepositoryCard from "@/components/dashboard/RepositoryCard";
 import UploadModal from "@/components/dashboard/UploadModal";
+import SearchModal from "@/components/dashboard/SearchModal";
+import HeaderActions from "@/components/dashboard/HeaderActions";
 import { Search, Bell, HelpCircle, Sparkles, Upload, ArrowRight, Loader2, FolderPlus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -75,28 +77,8 @@ export default function DashboardPage() {
       <div className="flex-1 flex flex-col ml-14 overflow-hidden">
         {/* Top bar */}
         <header className="flex items-center gap-4 px-6 h-14 border-b border-[#27272A] bg-[#09090B] flex-shrink-0">
-          {/* Search */}
-          <div className="flex-1 max-w-lg">
-            <div className="flex items-center gap-2.5 px-3 py-2 rounded-[8px] bg-[#111113] border border-[#27272A] hover:border-[#3f3f46] transition-colors cursor-text group">
-              <Search size={14} className="text-[#52525b]" />
-              <span className="text-[13px] text-[#52525b] flex-1">
-                Search repositories, files, functions, or chats...
-              </span>
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <kbd className="px-1.5 py-0.5 rounded-[4px] bg-[#1a1a1d] border border-[#27272A] text-[10px] text-[#52525b] font-mono">⌘</kbd>
-                <kbd className="px-1.5 py-0.5 rounded-[4px] bg-[#1a1a1d] border border-[#27272A] text-[10px] text-[#52525b] font-mono">K</kbd>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 ml-auto">
-            <button className="w-8 h-8 rounded-[8px] flex items-center justify-center text-[#52525b] hover:text-[#A1A1AA] hover:bg-[#111113] transition-all">
-              <Bell size={16} />
-            </button>
-            <button className="w-8 h-8 rounded-[8px] flex items-center justify-center text-[#52525b] hover:text-[#A1A1AA] hover:bg-[#111113] transition-all">
-              <HelpCircle size={16} />
-            </button>
-          </div>
+          <SearchModal />
+          <HeaderActions />
         </header>
 
         {/* Page content */}
@@ -133,6 +115,7 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-2.5 flex-shrink-0">
                   <button
                     id="ask-ai-btn"
+                    onClick={() => handleQuestionClick("Help me understand this codebase.")}
                     className="flex items-center gap-2 px-4 py-2 rounded-[8px] border border-[#27272A] text-[13px] text-[#A1A1AA] hover:text-[#FAFAFA] hover:border-[#3f3f46] transition-all font-medium"
                   >
                     <Sparkles size={14} />
