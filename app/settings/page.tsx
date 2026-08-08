@@ -15,12 +15,6 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      router.push("/login");
-      return;
-    }
-    
     fetchApi("/auth/me")
       .then(setUser)
       .catch(() => {

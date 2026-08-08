@@ -52,12 +52,6 @@ export default function RepositoryPage({ params }: PageProps) {
 
   useEffect(() => {
     const loadRepo = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        router.push("/login");
-        return;
-      }
-
       setIsLoading(true);
       try {
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -205,12 +199,17 @@ export default function RepositoryPage({ params }: PageProps) {
 
     try {
       const token = localStorage.getItem("token");
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const res = await fetch(`${API_BASE_URL}/repositories/chat-sessions/${currentSessionId}/ask`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
+        headers,
+        credentials: "include",
         body: JSON.stringify({ question: text }),
         signal: abortControllerRef.current.signal
       });
