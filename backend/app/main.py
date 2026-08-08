@@ -63,7 +63,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from app.api.routers import auth, repositories, chat, chat_sessions
+from app.api.routers import auth, repositories, chat, chat_sessions, search
 
 # Include routers
 app.add_middleware(RequestIDMiddleware)
@@ -71,6 +71,7 @@ app.include_router(auth.router)
 app.include_router(repositories.router)
 app.include_router(chat.router)
 app.include_router(chat_sessions.router)
+app.include_router(search.router)
 
 @app.get("/")
 async def root():

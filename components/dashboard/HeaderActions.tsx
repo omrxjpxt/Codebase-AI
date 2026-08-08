@@ -3,10 +3,12 @@
 import { useState, useRef, useEffect } from "react";
 import { Bell, HelpCircle, Book, Keyboard, LifeBuoy } from "lucide-react";
 import Link from "next/link";
+import KeyboardShortcutsModal from "./KeyboardShortcutsModal";
 
 export default function HeaderActions() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   
   const notifRef = useRef<HTMLDivElement>(null);
   const helpRef = useRef<HTMLDivElement>(null);
@@ -78,33 +80,40 @@ export default function HeaderActions() {
         {showHelp && (
           <div className="absolute right-0 top-full mt-2 w-56 bg-[#111113] border border-[#27272A] rounded-[10px] shadow-2xl z-50 p-1">
             <Link 
-              href="#" 
+              href="/docs" 
               onClick={() => setShowHelp(false)}
               className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#1a1a1d] rounded-[6px] transition-colors"
             >
               <Book size={14} />
               Documentation
             </Link>
-            <Link 
-              href="#" 
-              onClick={() => setShowHelp(false)}
-              className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#1a1a1d] rounded-[6px] transition-colors"
+            <button 
+              onClick={() => {
+                setShowHelp(false);
+                setShowShortcuts(true);
+              }}
+              className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#1a1a1d] rounded-[6px] transition-colors w-full text-left"
             >
               <Keyboard size={14} />
               Keyboard Shortcuts
-            </Link>
+            </button>
             <div className="h-px bg-[#27272A] my-1 mx-2" />
-            <Link 
-              href="#" 
+            <a 
+              href="mailto:support@codebase.ai" 
               onClick={() => setShowHelp(false)}
               className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#1a1a1d] rounded-[6px] transition-colors"
             >
               <LifeBuoy size={14} />
               Support
-            </Link>
+            </a>
           </div>
         )}
       </div>
+      
+      <KeyboardShortcutsModal 
+        isOpen={showShortcuts} 
+        onClose={() => setShowShortcuts(false)} 
+      />
     </div>
   );
 }

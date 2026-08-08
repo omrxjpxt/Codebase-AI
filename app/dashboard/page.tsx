@@ -9,33 +9,31 @@ import HeaderActions from "@/components/dashboard/HeaderActions";
 import { Search, Bell, HelpCircle, Sparkles, Upload, ArrowRight, Loader2, FolderPlus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { fetchApi, Repository, User } from "@/lib/api";
-import QuestionCard from "@/components/dashboard/QuestionCard"; // We will still use this
+import { fetchApi, Repository, User, ChatSession } from "@/lib/api";
+import QuestionCard from "@/components/dashboard/QuestionCard";
+import AskAiModal from "@/components/dashboard/AskAiModal";
 
-// Generic questions for now
-const recentQuestions = [
-  { id: "q1", title: "How does the authentication flow work?", time: "Just now" },
-  { id: "q2", title: "Where are the database models defined?", time: "2h ago" },
-  { id: "q3", title: "Explain the main state management strategy.", time: "5h ago" },
-  { id: "q4", title: "What are the core external dependencies?", time: "1d ago" },
-];
+
 
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [repositories, setRepositories] = useState<Repository[]>([]);
+  const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isAskAiModalOpen, setIsAskAiModalOpen] = useState(false);
 
   const loadData = async () => {
     setIsLoading(true);
     setError("");
     try {
       // Parallel requests for speed
-      const [userData, reposData] = await Promise.all([
+      const [userData, reposData, chatsData] = await Promise.all([
         fetchApi("/auth/me"),
-        fetchApi("/repositories")
+        fetchApi("/repositories"),
+        fetchApi("/chat-sessions").catch(() => []) // Optional, don't fail if no chats
       ]);
       setUser(userData);
       
@@ -44,6 +42,12 @@ export default function DashboardPage() {
         new Date(b.upload_date).getTime() - new Date(a.upload_date).getTime()
       );
       setRepositories(sortedRepos);
+
+      // Sort chats by created_at descending
+      const sortedChats = (chatsData || []).sort((a: any, b: any) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      setChatSessions(sortedChats);
     } catch (err: any) {
       setError(err.message || "Failed to load dashboard data.");
     } finally {
@@ -55,18 +59,35 @@ export default function DashboardPage() {
     loadData();
   }, [router]);
 
+  // Polling for processing/embedding repositories
+  useEffect(() => {
+    const isProcessing = repositories.some(
+      r => r.status === "processing" || r.status === "embedding"
+    );
+    
+    if (isProcessing) {
+      const interval = setInterval(async () => {
+        try {
+          const reposData = await fetchApi("/repositories");
+          const sortedRepos = reposData.sort((a: any, b: any) => 
+            new Date(b.upload_date).getTime() - new Date(a.upload_date).getTime()
+          );
+          setRepositories(sortedRepos);
+        } catch (e) {
+          console.error("Polling failed", e);
+        }
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [repositories]);
+
   const handleUploadSuccess = () => {
     setIsUploadModalOpen(false);
     loadData();
   };
 
-  const handleQuestionClick = (question: string) => {
-    if (repositories.length > 0) {
-      const latestRepo = repositories[0];
-      router.push(`/repository/${latestRepo.id}?q=${encodeURIComponent(question)}`);
-    } else {
-      setIsUploadModalOpen(true);
-    }
+  const handleChatClick = (chatId: string, repoId: string) => {
+    router.push(`/repository/${repoId}?chat=${chatId}`);
   };
 
   return (
@@ -115,7 +136,7 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-2.5 flex-shrink-0">
                   <button
                     id="ask-ai-btn"
-                    onClick={() => handleQuestionClick("Help me understand this codebase.")}
+                    onClick={() => setIsAskAiModalOpen(true)}
                     className="flex items-center gap-2 px-4 py-2 rounded-[8px] border border-[#27272A] text-[13px] text-[#A1A1AA] hover:text-[#FAFAFA] hover:border-[#3f3f46] transition-all font-medium"
                   >
                     <Sparkles size={14} />
@@ -182,11 +203,17 @@ export default function DashboardPage() {
                         Recent Questions
                       </h2>
                       <div className="grid grid-cols-2 gap-2.5">
-                        {recentQuestions.map((q) => (
-                          <div key={q.id} onClick={() => handleQuestionClick(q.title)}>
-                            <QuestionCard question={q as any} />
+                        {chatSessions.length === 0 ? (
+                          <div className="col-span-2 text-[12px] text-[#52525b] italic">
+                            No chat sessions yet. Ask AI to start one.
                           </div>
-                        ))}
+                        ) : (
+                          chatSessions.slice(0, 4).map((c) => (
+                            <div key={c.id} onClick={() => handleChatClick(c.id, c.repository_id)}>
+                              <QuestionCard question={{ title: c.title, time: new Date(c.created_at).toLocaleDateString() } as any} />
+                            </div>
+                          ))
+                        )}
                       </div>
                     </div>
                   </div>
@@ -212,6 +239,12 @@ export default function DashboardPage() {
         isOpen={isUploadModalOpen} 
         onClose={() => setIsUploadModalOpen(false)} 
         onSuccess={handleUploadSuccess} 
+      />
+      <AskAiModal
+        isOpen={isAskAiModalOpen}
+        onClose={() => setIsAskAiModalOpen(false)}
+        repositories={repositories}
+        onUploadClick={() => setIsUploadModalOpen(true)}
       />
     </div>
   );

@@ -50,9 +50,18 @@ export interface ChatMessage {
 
 export interface ChatSession {
   id: string;
+  user_id: string;
   repository_id: string;
   title: string;
   created_at: string;
+  updated_at: string;
+}
+
+export interface SearchResults {
+  repositories: Array<{ id: string; name: string; type: string }>;
+  files: Array<{ id: string; path: string; repository_id: string; repository_name: string; type: string }>;
+  chunks: Array<{ id: string; content_preview: string; path: string; repository_id: string; repository_name: string; type: string }>;
+  chats: Array<{ id: string; title: string; repository_id: string; repository_name: string; type: string }>;
 }
 
 export interface ChatSessionDetail extends ChatSession {
@@ -166,4 +175,8 @@ export async function deleteChatSession(sessionId: string): Promise<void> {
   await fetchApi(`/repositories/chat-sessions/${sessionId}`, {
     method: "DELETE",
   });
+}
+
+export async function globalSearch(query: string): Promise<SearchResults> {
+  return fetchApi(`/search?q=${encodeURIComponent(query)}`);
 }
