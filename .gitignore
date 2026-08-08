@@ -38,3 +38,8 @@ backend/.env
 backend/venv/
 __pycache__/
 *.py[cod]
+.env
+.env.local
+.env.*.local
+backend/.env
+
