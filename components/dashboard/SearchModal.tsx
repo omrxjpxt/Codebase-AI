@@ -29,10 +29,13 @@ export default function SearchModal() {
         e.preventDefault();
         setIsOpen((prev) => !prev);
       }
+      if (isOpen && e.key === "Escape") {
+        setIsOpen(false);
+      }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [isOpen]);
 
   // Fetch data when modal opens
   useEffect(() => {
@@ -83,9 +86,15 @@ export default function SearchModal() {
 
       {/* Modal Overlay */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] bg-black/60 backdrop-blur-sm p-4">
+        <div 
+          className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] bg-black/60 backdrop-blur-sm p-4"
+          onClick={() => setIsOpen(false)}
+        >
           {/* Modal Content */}
-          <div className="bg-[#111113] border border-[#27272A] rounded-[14px] w-full max-w-[600px] overflow-hidden shadow-2xl flex flex-col">
+          <div 
+            className="bg-[#111113] border border-[#27272A] rounded-[14px] w-full max-w-[600px] overflow-hidden shadow-2xl flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             
             {/* Search Input */}
             <div className="flex items-center gap-3 px-4 py-4 border-b border-[#27272A]">
