@@ -43,16 +43,16 @@ export default function RepoSidebar({
 
 
   return (
-    <div className="w-[200px] flex-shrink-0 h-full bg-[var(--background)] border-r border-[var(--border)] flex flex-col">
+    <div className="w-[200px] flex-shrink-0 h-full bg-[var(--sidebar-bg)] border-r border-[var(--sidebar-border)] flex flex-col">
       {/* Repo name / branch */}
-      <div className="px-4 py-4 border-b border-[var(--border)]">
+      <div className="px-4 py-4 border-b border-[var(--sidebar-border)]">
         <div className="flex items-center gap-2 mb-0.5">
-          <div className="w-5 h-5 rounded-[4px] bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center flex-shrink-0">
+          <div className="w-5 h-5 rounded-[4px] bg-[var(--sidebar-logo-bg)] border border-[var(--sidebar-border)] flex items-center justify-center flex-shrink-0">
             <svg width="9" height="9" viewBox="0 0 14 14" fill="none">
-              <rect x="1" y="1" width="5" height="5" rx="1" fill="#FAFAFA" />
-              <rect x="8" y="1" width="5" height="5" rx="1" fill="#FAFAFA" />
-              <rect x="1" y="8" width="5" height="5" rx="1" fill="#FAFAFA" />
-              <rect x="8" y="8" width="5" height="5" rx="1" fill="#FAFAFA" />
+              <rect x="1" y="1" width="5" height="5" rx="1" fill="var(--sidebar-logo-fill)" />
+              <rect x="8" y="1" width="5" height="5" rx="1" fill="var(--sidebar-logo-fill)" />
+              <rect x="1" y="8" width="5" height="5" rx="1" fill="var(--sidebar-logo-fill)" />
+              <rect x="8" y="8" width="5" height="5" rx="1" fill="var(--sidebar-logo-fill)" />
             </svg>
           </div>
           <span className="text-[13px] font-medium text-[var(--primary-text)] truncate leading-tight">
@@ -73,11 +73,11 @@ export default function RepoSidebar({
               className={cn(
                 "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-[8px] text-[13px] transition-all text-left",
                 isActive
-                  ? "bg-[var(--surface)] text-[var(--primary-text)] font-medium"
-                  : "text-[var(--secondary-text)] hover:text-[var(--primary-text)] hover:bg-[var(--surface)]"
+                  ? "bg-[var(--sidebar-active)] text-[var(--sidebar-icon-active)] font-medium"
+                  : "text-[var(--sidebar-icon)] hover:text-[var(--sidebar-icon-active)] hover:bg-[var(--sidebar-hover)]"
               )}
             >
-              <Icon size={15} className={isActive ? "text-[var(--primary-text)]" : "text-[var(--muted-text)]"} />
+              <Icon size={15} className={isActive ? "text-[var(--sidebar-icon-active)]" : "text-[var(--sidebar-icon)]"} />
               {label}
             </button>
           );
@@ -107,8 +107,8 @@ export default function RepoSidebar({
                 className={cn(
                   "group flex items-center justify-between px-2.5 py-1.5 rounded-[6px] text-[12px] cursor-pointer transition-colors",
                   activeSessionId === session.id 
-                    ? "bg-[var(--surface)] text-[var(--primary-text)] border border-[var(--border)]" 
-                    : "text-[var(--secondary-text)] hover:bg-[var(--surface)] hover:text-[var(--primary-text)] border border-transparent"
+                    ? "bg-[var(--sidebar-active)] text-[var(--sidebar-icon-active)] border border-[var(--sidebar-border)]" 
+                    : "text-[var(--sidebar-icon)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-icon-active)] border border-transparent"
                 )}
                 onClick={() => onSelectSession(session.id)}
               >
