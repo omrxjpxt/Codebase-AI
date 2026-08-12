@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Github } from "lucide-react";
-import { API_BASE_URL, fetchApi } from "@/lib/api";
+import { Eye, EyeOff, Github, AlertTriangle } from "lucide-react";
+import { API_BASE_URL, fetchApi, ApiError } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,8 +23,19 @@ export default function LoginPage() {
     } else {
       fetchApi("/auth/me")
         .then(() => router.push("/dashboard"))
-        .catch(() => {
-          setIsCheckingAuth(false);
+        .catch((error) => {
+          if (error instanceof ApiError && error.status === 401) {
+            // Normal unauthenticated state
+            setIsCheckingAuth(false);
+          } else {
+            // Actual 500 or network error
+            setErrorMsg(
+              error.message === "Failed to fetch" || !error.status
+                ? "Cannot connect to server. Please ensure the backend is running."
+                : "An unexpected error occurred while checking authentication."
+            );
+            setIsCheckingAuth(false);
+          }
         });
     }
   }, [router]);

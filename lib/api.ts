@@ -1,5 +1,14 @@
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+export class ApiError extends Error {
+  status?: number;
+  constructor(message: string, status?: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
 export interface User {
   id: string;
   email: string;
@@ -112,7 +121,7 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
       const detailStr = errorData.detail 
         ? (typeof errorData.detail === 'string' ? errorData.detail : JSON.stringify(errorData.detail))
         : `API Error: ${response.status}`;
-      throw new Error(detailStr);
+      throw new ApiError(detailStr, response.status);
     }
 
     // Some endpoints might return 204 No Content
@@ -121,8 +130,11 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
     }
 
     return await response.json();
-  } catch (error) {
-    console.error(`API Request failed for ${endpoint}:`, error);
+  } catch (error: any) {
+    // Only log actual unexpected errors, avoid logging expected 401s which trigger Next.js error overlays in dev
+    if (!(error instanceof ApiError && error.status === 401)) {
+      console.error(`API Request failed for ${endpoint}:`, error);
+    }
     throw error;
   }
 }
