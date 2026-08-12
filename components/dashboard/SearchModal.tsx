@@ -98,15 +98,15 @@ export default function SearchModal() {
       <div className="flex-1 max-w-lg">
         <button 
           onClick={() => setIsOpen(true)}
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[8px] bg-[#111113] border border-[#27272A] hover:border-[#3f3f46] transition-colors text-left group"
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[8px] bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--border-hover)] transition-colors text-left group"
         >
-          <Search size={14} className="text-[#52525b]" />
-          <span className="text-[13px] text-[#52525b] flex-1">
+          <Search size={14} className="text-[var(--muted-text)]" />
+          <span className="text-[13px] text-[var(--muted-text)] flex-1">
             Search repositories, files, functions, or chats...
           </span>
           <div className="flex items-center gap-1 flex-shrink-0">
-            <kbd className="px-1.5 py-0.5 rounded-[4px] bg-[#1a1a1d] border border-[#27272A] text-[10px] text-[#52525b] font-mono">⌘</kbd>
-            <kbd className="px-1.5 py-0.5 rounded-[4px] bg-[#1a1a1d] border border-[#27272A] text-[10px] text-[#52525b] font-mono">K</kbd>
+            <kbd className="px-1.5 py-0.5 rounded-[4px] bg-[var(--surface-hover)] border border-[var(--border)] text-[10px] text-[var(--muted-text)] font-mono">⌘</kbd>
+            <kbd className="px-1.5 py-0.5 rounded-[4px] bg-[var(--surface-hover)] border border-[var(--border)] text-[10px] text-[var(--muted-text)] font-mono">K</kbd>
           </div>
         </button>
       </div>
@@ -119,24 +119,24 @@ export default function SearchModal() {
         >
           {/* Modal Content */}
           <div 
-            className="bg-[#111113] border border-[#27272A] rounded-[14px] w-full max-w-[600px] overflow-hidden shadow-2xl flex flex-col"
+            className="bg-[var(--surface)] border border-[var(--border)] rounded-[14px] w-full max-w-[600px] overflow-hidden shadow-2xl flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             
             {/* Search Input */}
-            <div className="flex items-center gap-3 px-4 py-4 border-b border-[#27272A]">
-              <Search size={18} className="text-[#52525b]" />
+            <div className="flex items-center gap-3 px-4 py-4 border-b border-[var(--border)]">
+              <Search size={18} className="text-[var(--muted-text)]" />
               <input
                 ref={inputRef}
                 type="text"
                 value={query}
                 onChange={handleInputChange}
                 placeholder="Search repositories, files, code, or chats..."
-                className="flex-1 bg-transparent border-none text-[15px] text-[#FAFAFA] placeholder:text-[#52525b] focus:outline-none"
+                className="flex-1 bg-transparent border-none text-[15px] text-[var(--primary-text)] placeholder:text-[var(--muted-text)] focus:outline-none"
               />
               <button 
                 onClick={() => setIsOpen(false)}
-                className="p-1 rounded-[6px] text-[#52525b] hover:text-[#FAFAFA] hover:bg-[#27272A] transition-colors"
+                className="p-1 rounded-[6px] text-[var(--muted-text)] hover:text-[var(--primary-text)] hover:bg-[var(--border)] transition-colors"
               >
                 <X size={16} />
               </button>
@@ -145,17 +145,17 @@ export default function SearchModal() {
             {/* Results Area */}
             <div className="max-h-[60vh] overflow-y-auto p-2">
               {isLoading ? (
-                <div className="flex flex-col items-center justify-center py-12 text-[#52525b]">
+                <div className="flex flex-col items-center justify-center py-12 text-[var(--muted-text)]">
                   <Loader2 size={24} className="animate-spin mb-3" />
                   <p className="text-[13px]">Searching...</p>
                 </div>
               ) : query.trim().length < 2 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-[#52525b]">
+                <div className="flex flex-col items-center justify-center py-12 text-[var(--muted-text)]">
                   <Command size={32} className="mb-3 opacity-20" />
                   <p className="text-[13px]">Type at least 2 characters to search</p>
                 </div>
               ) : !hasResults ? (
-                <div className="flex flex-col items-center justify-center py-12 text-[#52525b]">
+                <div className="flex flex-col items-center justify-center py-12 text-[var(--muted-text)]">
                   <Command size={32} className="mb-3 opacity-20" />
                   <p className="text-[13px]">No results found for "{query}"</p>
                 </div>
@@ -165,7 +165,7 @@ export default function SearchModal() {
                   {/* Repositories */}
                   {results?.repositories.length > 0 && (
                     <div>
-                      <div className="px-2 mb-2 text-[11px] font-semibold text-[#52525b] uppercase tracking-widest">
+                      <div className="px-2 mb-2 text-[11px] font-semibold text-[var(--muted-text)] uppercase tracking-widest">
                         Repositories
                       </div>
                       <div className="flex flex-col gap-1">
@@ -176,10 +176,10 @@ export default function SearchModal() {
                               setIsOpen(false);
                               router.push(`/repository/${repo.id}`);
                             }}
-                            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-[8px] hover:bg-[#1a1a1d] transition-colors text-left group"
+                            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-[8px] hover:bg-[var(--surface-hover)] transition-colors text-left group"
                           >
-                            <Folder size={16} className="text-[#A1A1AA] group-hover:text-[#FAFAFA]" />
-                            <span className="text-[13px] text-[#A1A1AA] group-hover:text-[#FAFAFA] font-medium flex-1 truncate">
+                            <Folder size={16} className="text-[var(--secondary-text)] group-hover:text-[var(--primary-text)]" />
+                            <span className="text-[13px] text-[var(--secondary-text)] group-hover:text-[var(--primary-text)] font-medium flex-1 truncate">
                               {repo.name}
                             </span>
                           </button>
@@ -191,7 +191,7 @@ export default function SearchModal() {
                   {/* Files */}
                   {results?.files.length > 0 && (
                     <div>
-                      <div className="px-2 mb-2 text-[11px] font-semibold text-[#52525b] uppercase tracking-widest">
+                      <div className="px-2 mb-2 text-[11px] font-semibold text-[var(--muted-text)] uppercase tracking-widest">
                         Files
                       </div>
                       <div className="flex flex-col gap-1">
@@ -203,12 +203,12 @@ export default function SearchModal() {
                               // We could navigate to a file explorer view, for now going to repo
                               router.push(`/repository/${file.repository_id}`);
                             }}
-                            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-[8px] hover:bg-[#1a1a1d] transition-colors text-left group"
+                            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-[8px] hover:bg-[var(--surface-hover)] transition-colors text-left group"
                           >
-                            <FileCode size={16} className="text-[#A1A1AA] group-hover:text-[#FAFAFA] flex-shrink-0" />
+                            <FileCode size={16} className="text-[var(--secondary-text)] group-hover:text-[var(--primary-text)] flex-shrink-0" />
                             <div className="flex-1 min-w-0">
-                              <p className="text-[13px] text-[#FAFAFA] font-medium truncate">{file.path.split('/').pop()}</p>
-                              <p className="text-[11px] text-[#52525b] truncate">{file.repository_name} • {file.path}</p>
+                              <p className="text-[13px] text-[var(--primary-text)] font-medium truncate">{file.path.split('/').pop()}</p>
+                              <p className="text-[11px] text-[var(--muted-text)] truncate">{file.repository_name} • {file.path}</p>
                             </div>
                           </button>
                         ))}
@@ -219,7 +219,7 @@ export default function SearchModal() {
                   {/* Chunks */}
                   {results?.chunks.length > 0 && (
                     <div>
-                      <div className="px-2 mb-2 text-[11px] font-semibold text-[#52525b] uppercase tracking-widest">
+                      <div className="px-2 mb-2 text-[11px] font-semibold text-[var(--muted-text)] uppercase tracking-widest">
                         Code Snippets
                       </div>
                       <div className="flex flex-col gap-1">
@@ -230,14 +230,14 @@ export default function SearchModal() {
                               setIsOpen(false);
                               router.push(`/repository/${chunk.repository_id}`);
                             }}
-                            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-[8px] hover:bg-[#1a1a1d] transition-colors text-left group"
+                            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-[8px] hover:bg-[var(--surface-hover)] transition-colors text-left group"
                           >
-                            <AlignLeft size={16} className="text-[#A1A1AA] group-hover:text-[#FAFAFA] flex-shrink-0" />
+                            <AlignLeft size={16} className="text-[var(--secondary-text)] group-hover:text-[var(--primary-text)] flex-shrink-0" />
                             <div className="flex-1 min-w-0">
-                              <p className="text-[12px] text-[#A1A1AA] group-hover:text-[#FAFAFA] truncate font-mono bg-[#09090B] px-1 rounded inline-block">
+                              <p className="text-[12px] text-[var(--secondary-text)] group-hover:text-[var(--primary-text)] truncate font-mono bg-[var(--background)] px-1 rounded inline-block">
                                 {chunk.content_preview}
                               </p>
-                              <p className="text-[11px] text-[#52525b] truncate mt-1">{chunk.path} • {chunk.repository_name}</p>
+                              <p className="text-[11px] text-[var(--muted-text)] truncate mt-1">{chunk.path} • {chunk.repository_name}</p>
                             </div>
                           </button>
                         ))}
@@ -248,7 +248,7 @@ export default function SearchModal() {
                   {/* Chats */}
                   {results?.chats.length > 0 && (
                     <div>
-                      <div className="px-2 mb-2 text-[11px] font-semibold text-[#52525b] uppercase tracking-widest">
+                      <div className="px-2 mb-2 text-[11px] font-semibold text-[var(--muted-text)] uppercase tracking-widest">
                         Chats
                       </div>
                       <div className="flex flex-col gap-1">
@@ -259,12 +259,12 @@ export default function SearchModal() {
                               setIsOpen(false);
                               router.push(`/repository/${chat.repository_id}?chat=${chat.id}`);
                             }}
-                            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-[8px] hover:bg-[#1a1a1d] transition-colors text-left group"
+                            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-[8px] hover:bg-[var(--surface-hover)] transition-colors text-left group"
                           >
-                            <MessageSquare size={16} className="text-[#A1A1AA] group-hover:text-[#FAFAFA] flex-shrink-0" />
+                            <MessageSquare size={16} className="text-[var(--secondary-text)] group-hover:text-[var(--primary-text)] flex-shrink-0" />
                             <div className="flex-1 min-w-0">
-                              <p className="text-[13px] text-[#FAFAFA] font-medium truncate">{chat.title}</p>
-                              <p className="text-[11px] text-[#52525b] truncate">{chat.repository_name}</p>
+                              <p className="text-[13px] text-[var(--primary-text)] font-medium truncate">{chat.title}</p>
+                              <p className="text-[11px] text-[var(--muted-text)] truncate">{chat.repository_name}</p>
                             </div>
                           </button>
                         ))}
@@ -277,10 +277,10 @@ export default function SearchModal() {
             </div>
             
             {/* Footer */}
-            <div className="px-4 py-3 border-t border-[#27272A] flex items-center justify-between text-[11px] text-[#52525b] bg-[#09090B]">
+            <div className="px-4 py-3 border-t border-[var(--border)] flex items-center justify-between text-[11px] text-[var(--muted-text)] bg-[var(--background)]">
               <div className="flex items-center gap-2">
-                <span><kbd className="px-1 py-0.5 rounded bg-[#1a1a1d] border border-[#27272A]">↑</kbd> <kbd className="px-1 py-0.5 rounded bg-[#1a1a1d] border border-[#27272A]">↓</kbd> to navigate</span>
-                <span><kbd className="px-1 py-0.5 rounded bg-[#1a1a1d] border border-[#27272A]">↵</kbd> to select</span>
+                <span><kbd className="px-1 py-0.5 rounded bg-[var(--surface-hover)] border border-[var(--border)]">↑</kbd> <kbd className="px-1 py-0.5 rounded bg-[var(--surface-hover)] border border-[var(--border)]">↓</kbd> to navigate</span>
+                <span><kbd className="px-1 py-0.5 rounded bg-[var(--surface-hover)] border border-[var(--border)]">↵</kbd> to select</span>
               </div>
               <div>esc to close</div>
             </div>

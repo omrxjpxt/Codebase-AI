@@ -22,38 +22,38 @@ export default function AskAiModal({ isOpen, onClose, repositories, onUploadClic
       onClick={onClose}
     >
       <div 
-        className="bg-[#111113] border border-[#27272A] rounded-[14px] w-full max-w-[480px] overflow-hidden shadow-2xl flex flex-col"
+        className="bg-[var(--surface)] border border-[var(--border)] rounded-[14px] w-full max-w-[480px] overflow-hidden shadow-2xl flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-5 border-b border-[#27272A] flex items-center justify-between">
+        <div className="p-5 border-b border-[var(--border)] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Sparkles size={16} className="text-[#A1A1AA]" />
-            <h2 className="text-[16px] font-semibold text-[#FAFAFA]">Ask AI</h2>
+            <Sparkles size={16} className="text-[var(--secondary-text)]" />
+            <h2 className="text-[16px] font-semibold text-[var(--primary-text)]">Ask AI</h2>
           </div>
           <button 
             onClick={onClose} 
-            className="text-[#52525b] hover:text-[#FAFAFA] transition-colors"
+            className="text-[var(--muted-text)] hover:text-[var(--primary-text)] transition-colors"
           >
             <X size={16} />
           </button>
         </div>
 
         <div className="p-6">
-          <p className="text-[13px] text-[#A1A1AA] mb-4">
+          <p className="text-[13px] text-[var(--secondary-text)] mb-4">
             Select a repository to start a new chat session and ask questions about its codebase.
           </p>
 
           {repositories.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center bg-[#09090B] border border-[#27272A] rounded-[10px]">
-              <Folder size={24} className="text-[#52525b] mb-2" />
-              <p className="text-[13px] font-medium text-[#FAFAFA] mb-1">No repositories available</p>
-              <p className="text-[12px] text-[#52525b] mb-4">You need to upload a repository first.</p>
+            <div className="flex flex-col items-center justify-center py-8 text-center bg-[var(--background)] border border-[var(--border)] rounded-[10px]">
+              <Folder size={24} className="text-[var(--muted-text)] mb-2" />
+              <p className="text-[13px] font-medium text-[var(--primary-text)] mb-1">No repositories available</p>
+              <p className="text-[12px] text-[var(--muted-text)] mb-4">You need to upload a repository first.</p>
               <button 
                 onClick={() => {
                   onClose();
                   onUploadClick();
                 }}
-                className="px-4 py-2 bg-[#FAFAFA] text-[#09090B] rounded-[8px] text-[13px] font-semibold hover:bg-white transition-colors"
+                className="px-4 py-2 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] rounded-[8px] text-[13px] font-semibold hover:bg-white transition-colors"
               >
                 Upload Repository
               </button>
@@ -67,14 +67,14 @@ export default function AskAiModal({ isOpen, onClose, repositories, onUploadClic
                     onClose();
                     router.push(`/repository/${repo.id}`);
                   }}
-                  className="flex items-center gap-3 w-full px-4 py-3 rounded-[10px] bg-[#09090B] border border-[#27272A] hover:border-[#3f3f46] hover:bg-[#1a1a1d] transition-all text-left group"
+                  className="flex items-center gap-3 w-full px-4 py-3 rounded-[10px] bg-[var(--background)] border border-[var(--border)] hover:border-[var(--border-hover)] hover:bg-[var(--surface-hover)] transition-all text-left group"
                 >
-                  <Folder size={16} className="text-[#52525b] group-hover:text-[#FAFAFA]" />
+                  <Folder size={16} className="text-[var(--muted-text)] group-hover:text-[var(--primary-text)]" />
                   <div className="flex-1 min-w-0">
-                    <span className="text-[13px] text-[#A1A1AA] group-hover:text-[#FAFAFA] font-medium block truncate">
+                    <span className="text-[13px] text-[var(--secondary-text)] group-hover:text-[var(--primary-text)] font-medium block truncate">
                       {repo.name}
                     </span>
-                    <span className="text-[11px] text-[#52525b] truncate mt-0.5 block">
+                    <span className="text-[11px] text-[var(--muted-text)] truncate mt-0.5 block">
                       {repo.status === "indexed" ? "Ready for chat" : "Indexing in progress..."}
                     </span>
                   </div>

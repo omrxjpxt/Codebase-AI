@@ -46,9 +46,9 @@ export default function ChatInput({
     <div className="relative">
       <div
         className={cn(
-          "flex flex-col rounded-[12px] bg-[#111113] border transition-colors",
-          value ? "border-[#3f3f46]" : "border-[#27272A]",
-          "focus-within:border-[#52525b]"
+          "flex flex-col rounded-[12px] bg-[var(--surface)] border transition-colors",
+          value ? "border-[var(--border-hover)]" : "border-[var(--border)]",
+          "focus-within:border-[var(--input-focus-border)]"
         )}
       >
         {/* Textarea */}
@@ -61,21 +61,21 @@ export default function ChatInput({
           placeholder={placeholder}
           disabled={disabled}
           rows={1}
-          className="w-full bg-transparent px-4 pt-3.5 pb-2 text-[14px] text-[#FAFAFA] placeholder:text-[#52525b] resize-none focus:outline-none leading-relaxed"
+          className="w-full bg-transparent px-4 pt-3.5 pb-2 text-[14px] text-[var(--primary-text)] placeholder:text-[var(--muted-text)] resize-none focus:outline-none leading-relaxed"
         />
 
         {/* Bottom bar */}
         <div className="flex items-center justify-between px-3 pb-2.5 pt-1">
           <div className="flex items-center gap-1">
-            <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[12px] text-[#52525b] hover:text-[#A1A1AA] hover:bg-[#1a1a1d] transition-all">
+            <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[12px] text-[var(--muted-text)] hover:text-[var(--secondary-text)] hover:bg-[var(--surface-hover)] transition-all">
               <Plus size={12} />
               Add Context
             </button>
-            <button className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[12px] text-[#52525b] hover:text-[#A1A1AA] hover:bg-[#1a1a1d] transition-all">
+            <button className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[12px] text-[var(--muted-text)] hover:text-[var(--secondary-text)] hover:bg-[var(--surface-hover)] transition-all">
               <AtSign size={12} />
               Files
             </button>
-            <button className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[12px] text-[#52525b] hover:text-[#A1A1AA] hover:bg-[#1a1a1d] transition-all">
+            <button className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[12px] text-[var(--muted-text)] hover:text-[var(--secondary-text)] hover:bg-[var(--surface-hover)] transition-all">
               <Hash size={12} />
               Symbols
             </button>
@@ -88,8 +88,8 @@ export default function ChatInput({
             className={cn(
               "w-7 h-7 rounded-[7px] flex items-center justify-center transition-all",
               value.trim()
-                ? "bg-[#FAFAFA] text-[#09090B] hover:bg-white cursor-pointer"
-                : "bg-[#1a1a1d] text-[#52525b] cursor-not-allowed"
+                ? "bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-white cursor-pointer"
+                : "bg-[var(--surface-hover)] text-[var(--muted-text)] cursor-not-allowed"
             )}
           >
             <ArrowUp size={14} />

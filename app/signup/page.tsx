@@ -100,18 +100,18 @@ export default function SignupPage() {
 
   if (isCheckingAuth) {
     return (
-      <div className="min-h-screen bg-[#09090B] flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-[#27272A] border-t-[#FAFAFA] rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-[var(--border)] border-t-[var(--spinner-head)] rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#09090B] flex flex-col">
+    <div className="min-h-screen bg-[var(--background)] flex flex-col">
       {/* Top nav */}
-      <header className="flex items-center justify-between px-6 h-14 border-b border-[#27272A]">
+      <header className="flex items-center justify-between px-6 h-14 border-b border-[var(--border)]">
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-[#111113] border border-[#27272A] rounded-[6px] flex items-center justify-center">
+          <div className="w-7 h-7 bg-[var(--surface)] border border-[var(--border)] rounded-[6px] flex items-center justify-center">
             <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
               <rect x="1" y="1" width="5" height="5" rx="1" fill="#FAFAFA" />
               <rect x="8" y="1" width="5" height="5" rx="1" fill="#FAFAFA" />
@@ -119,11 +119,11 @@ export default function SignupPage() {
               <rect x="8" y="8" width="5" height="5" rx="1" fill="#FAFAFA" />
             </svg>
           </div>
-          <span className="text-[14px] font-semibold text-[#FAFAFA]">CodeBase AI</span>
+          <span className="text-[14px] font-semibold text-[var(--primary-text)]">CodeBase AI</span>
         </Link>
         <Link
           href="/login"
-          className="text-[13px] text-[#A1A1AA] hover:text-[#FAFAFA] transition-colors"
+          className="text-[13px] text-[var(--secondary-text)] hover:text-[var(--primary-text)] transition-colors"
         >
           Sign In
         </Link>
@@ -133,16 +133,16 @@ export default function SignupPage() {
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-10">
         {/* Heading */}
         <div className="text-center mb-8">
-          <h1 className="text-[40px] font-bold text-[#FAFAFA] leading-tight mb-2">
+          <h1 className="text-[40px] font-bold text-[var(--primary-text)] leading-tight mb-2">
             Create Your<br />Workspace
           </h1>
-          <p className="text-[14px] text-[#A1A1AA] leading-relaxed">
+          <p className="text-[14px] text-[var(--secondary-text)] leading-relaxed">
             Upload repositories, ask questions, and<br />understand code faster.
           </p>
         </div>
 
         {/* Card */}
-        <div className="w-full max-w-[420px] bg-[#111113] border border-[#27272A] rounded-[14px] p-7">
+        <div className="w-full max-w-[420px] bg-[var(--surface)] border border-[var(--border)] rounded-[14px] p-7">
           <form className="space-y-4" onSubmit={handleSubmit}>
             {errorMsg && (
               <div className="p-3 rounded-[10px] bg-red-500/10 border border-red-500/20 text-red-500 text-[13px]">
@@ -157,7 +157,7 @@ export default function SignupPage() {
 
             {/* Full Name */}
             <div>
-              <label className="block text-[11px] font-semibold text-[#A1A1AA] uppercase tracking-widest mb-2">
+              <label className="block text-[11px] font-semibold text-[var(--secondary-text)] uppercase tracking-widest mb-2">
                 Full Name
               </label>
               <input
@@ -166,13 +166,13 @@ export default function SignupPage() {
                 value={form.name}
                 onChange={update("name")}
                 placeholder="Linus Torvalds"
-                className="w-full bg-[#09090B] border border-[#27272A] rounded-[10px] px-4 py-3 text-[14px] text-[#FAFAFA] placeholder:text-[#3f3f46] focus:outline-none focus:border-[#52525b] transition-colors"
+                className="w-full bg-[var(--background)] border border-[var(--border)] rounded-[10px] px-4 py-3 text-[14px] text-[var(--primary-text)] placeholder:text-[var(--placeholder-text)] focus:outline-none focus:border-[var(--input-focus-border)] transition-colors"
               />
             </div>
 
             {/* Email */}
             <div>
-              <label className="block text-[11px] font-semibold text-[#A1A1AA] uppercase tracking-widest mb-2">
+              <label className="block text-[11px] font-semibold text-[var(--secondary-text)] uppercase tracking-widest mb-2">
                 Email Address
               </label>
               <input
@@ -181,13 +181,13 @@ export default function SignupPage() {
                 value={form.email}
                 onChange={update("email")}
                 placeholder="name@company.com"
-                className="w-full bg-[#09090B] border border-[#27272A] rounded-[10px] px-4 py-3 text-[14px] text-[#FAFAFA] placeholder:text-[#3f3f46] focus:outline-none focus:border-[#52525b] transition-colors"
+                className="w-full bg-[var(--background)] border border-[var(--border)] rounded-[10px] px-4 py-3 text-[14px] text-[var(--primary-text)] placeholder:text-[var(--placeholder-text)] focus:outline-none focus:border-[var(--input-focus-border)] transition-colors"
               />
             </div>
 
             {/* Password */}
             <div>
-              <label className="block text-[11px] font-semibold text-[#A1A1AA] uppercase tracking-widest mb-2">
+              <label className="block text-[11px] font-semibold text-[var(--secondary-text)] uppercase tracking-widest mb-2">
                 Password
               </label>
               <div className="relative">
@@ -197,12 +197,12 @@ export default function SignupPage() {
                   value={form.password}
                   onChange={update("password")}
                   placeholder="••••••••"
-                  className="w-full bg-[#09090B] border border-[#27272A] rounded-[10px] px-4 py-3 pr-11 text-[14px] text-[#FAFAFA] placeholder:text-[#3f3f46] focus:outline-none focus:border-[#52525b] transition-colors"
+                  className="w-full bg-[var(--background)] border border-[var(--border)] rounded-[10px] px-4 py-3 pr-11 text-[14px] text-[var(--primary-text)] placeholder:text-[var(--placeholder-text)] focus:outline-none focus:border-[var(--input-focus-border)] transition-colors"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#52525b] hover:text-[#A1A1AA] transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted-text)] hover:text-[var(--secondary-text)] transition-colors"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -211,7 +211,7 @@ export default function SignupPage() {
 
             {/* Confirm Password */}
             <div>
-              <label className="block text-[11px] font-semibold text-[#A1A1AA] uppercase tracking-widest mb-2">
+              <label className="block text-[11px] font-semibold text-[var(--secondary-text)] uppercase tracking-widest mb-2">
                 Confirm Password
               </label>
               <div className="relative">
@@ -221,12 +221,12 @@ export default function SignupPage() {
                   value={form.confirm}
                   onChange={update("confirm")}
                   placeholder="••••••••"
-                  className="w-full bg-[#09090B] border border-[#27272A] rounded-[10px] px-4 py-3 pr-11 text-[14px] text-[#FAFAFA] placeholder:text-[#3f3f46] focus:outline-none focus:border-[#52525b] transition-colors"
+                  className="w-full bg-[var(--background)] border border-[var(--border)] rounded-[10px] px-4 py-3 pr-11 text-[14px] text-[var(--primary-text)] placeholder:text-[var(--placeholder-text)] focus:outline-none focus:border-[var(--input-focus-border)] transition-colors"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirm(!showConfirm)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#52525b] hover:text-[#A1A1AA] transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted-text)] hover:text-[var(--secondary-text)] transition-colors"
                 >
                   {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -239,8 +239,8 @@ export default function SignupPage() {
                 onClick={() => setAgreed(!agreed)}
                 className={`w-4 h-4 rounded-[4px] border flex items-center justify-center cursor-pointer flex-shrink-0 mt-0.5 transition-all ${
                   agreed
-                    ? "bg-[#FAFAFA] border-[#FAFAFA]"
-                    : "border-[#27272A] hover:border-[#52525b]"
+                    ? "bg-[var(--btn-primary-bg)] border-[var(--btn-primary-bg)]"
+                    : "border-[var(--border)] hover:border-[var(--border-hover)]"
                 }`}
               >
                 {agreed && (
@@ -249,11 +249,11 @@ export default function SignupPage() {
                   </svg>
                 )}
               </div>
-              <span className="text-[13px] text-[#A1A1AA] leading-snug">
+              <span className="text-[13px] text-[var(--secondary-text)] leading-snug">
                 I agree to the{" "}
-                <Link href="#" className="text-[#FAFAFA] hover:underline">Terms of Service</Link>{" "}
+                <Link href="#" className="text-[var(--primary-text)] hover:underline">Terms of Service</Link>{" "}
                 and{" "}
-                <Link href="#" className="text-[#FAFAFA] hover:underline">Privacy Policy</Link>
+                <Link href="#" className="text-[var(--primary-text)] hover:underline">Privacy Policy</Link>
               </span>
             </div>
 
@@ -262,13 +262,13 @@ export default function SignupPage() {
               type="submit"
               id="create-account-btn"
               disabled={isLoading}
-              className={`w-full py-3 rounded-[10px] bg-[#FAFAFA] text-[#09090B] text-[14px] font-semibold transition-all mt-1 flex items-center justify-center gap-2 ${
+              className={`w-full py-3 rounded-[10px] bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] text-[14px] font-semibold transition-all mt-1 flex items-center justify-center gap-2 ${
                 isLoading ? "opacity-70 cursor-not-allowed" : "hover:bg-white"
               }`}
             >
               {isLoading ? (
                 <>
-                  <svg className="animate-spin h-4 w-4 text-[#09090B]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-4 w-4 text-[var(--btn-primary-text)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
@@ -282,25 +282,25 @@ export default function SignupPage() {
 
           {/* Divider */}
           <div className="flex items-center gap-3 my-5">
-            <div className="flex-1 h-px bg-[#27272A]" />
-            <span className="text-[11px] text-[#52525b] tracking-widest uppercase">or</span>
-            <div className="flex-1 h-px bg-[#27272A]" />
+            <div className="flex-1 h-px bg-[var(--border)]" />
+            <span className="text-[11px] text-[var(--muted-text)] tracking-widest uppercase">or</span>
+            <div className="flex-1 h-px bg-[var(--border)]" />
           </div>
 
           {/* GitHub */}
           <Link
             href={`${API_BASE_URL}/auth/github/login`}
             id="github-signup-btn"
-            className="w-full flex items-center justify-center gap-2.5 py-3 rounded-[10px] border border-[#27272A] text-[14px] text-[#FAFAFA] font-medium hover:bg-[#1a1a1d] hover:border-[#3f3f46] transition-all"
+            className="w-full flex items-center justify-center gap-2.5 py-3 rounded-[10px] border border-[var(--border)] text-[14px] text-[var(--primary-text)] font-medium hover:bg-[var(--surface-hover)] hover:border-[var(--border-hover)] transition-all"
           >
             <Github size={18} />
             Continue with GitHub
           </Link>
 
           {/* Footer link */}
-          <p className="mt-5 text-center text-[13px] text-[#A1A1AA]">
+          <p className="mt-5 text-center text-[13px] text-[var(--secondary-text)]">
             Already have an account?{" "}
-            <Link href="/login" className="text-[#FAFAFA] font-semibold hover:underline">
+            <Link href="/login" className="text-[var(--primary-text)] font-semibold hover:underline">
               Sign In
             </Link>
           </p>
@@ -308,10 +308,10 @@ export default function SignupPage() {
       </div>
 
       {/* Page footer */}
-      <div className="border-t border-[#27272A] py-5 px-6">
+      <div className="border-t border-[var(--border)] py-5 px-6">
         <div className="max-w-lg mx-auto flex items-center justify-between flex-wrap gap-4">
           <Link href="/" className="flex items-center gap-1.5">
-            <div className="w-5 h-5 bg-[#111113] border border-[#27272A] rounded-[4px] flex items-center justify-center">
+            <div className="w-5 h-5 bg-[var(--surface)] border border-[var(--border)] rounded-[4px] flex items-center justify-center">
               <svg width="9" height="9" viewBox="0 0 14 14" fill="none">
                 <rect x="1" y="1" width="5" height="5" rx="1" fill="#FAFAFA" />
                 <rect x="8" y="1" width="5" height="5" rx="1" fill="#FAFAFA" />
@@ -319,16 +319,16 @@ export default function SignupPage() {
                 <rect x="8" y="8" width="5" height="5" rx="1" fill="#FAFAFA" />
               </svg>
             </div>
-            <span className="text-[12px] text-[#52525b]">CodeBase AI</span>
+            <span className="text-[12px] text-[var(--muted-text)]">CodeBase AI</span>
           </Link>
           <div className="flex items-center gap-5">
             {["Privacy Policy", "Terms of Service", "Security", "Status"].map((l) => (
-              <Link key={l} href="#" className="text-[12px] text-[#52525b] hover:text-[#A1A1AA] transition-colors">
+              <Link key={l} href="#" className="text-[12px] text-[var(--muted-text)] hover:text-[var(--secondary-text)] transition-colors">
                 {l}
               </Link>
             ))}
           </div>
-          <span className="text-[12px] text-[#52525b]">© 2024 CodeBase AI. All rights reserved.</span>
+          <span className="text-[12px] text-[var(--muted-text)]">© 2024 CodeBase AI. All rights reserved.</span>
         </div>
       </div>
     </div>

@@ -272,21 +272,21 @@ export default function RepositoryPage({ params }: PageProps) {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen bg-[#09090B] items-center justify-center">
-        <Loader2 className="animate-spin text-[#52525b]" size={32} />
+      <div className="flex h-screen bg-[var(--background)] items-center justify-center">
+        <Loader2 className="animate-spin text-[var(--muted-text)]" size={32} />
       </div>
     );
   }
 
   if (error || !repo) {
     return (
-      <div className="flex h-screen bg-[#09090B] items-center justify-center flex-col">
-        <div className="p-6 rounded-[10px] bg-[#111113] border border-[#27272A] max-w-md text-center">
-          <h2 className="text-[18px] font-semibold text-[#FAFAFA] mb-2">Error</h2>
-          <p className="text-[14px] text-[#A1A1AA] mb-6">{error || "Repository not found."}</p>
+      <div className="flex h-screen bg-[var(--background)] items-center justify-center flex-col">
+        <div className="p-6 rounded-[10px] bg-[var(--surface)] border border-[var(--border)] max-w-md text-center">
+          <h2 className="text-[18px] font-semibold text-[var(--primary-text)] mb-2">Error</h2>
+          <p className="text-[14px] text-[var(--secondary-text)] mb-6">{error || "Repository not found."}</p>
           <button 
             onClick={() => router.push("/dashboard")}
-            className="px-4 py-2 bg-[#FAFAFA] text-[#09090B] font-medium rounded-[6px] text-[13px] hover:bg-white transition-colors"
+            className="px-4 py-2 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-medium rounded-[6px] text-[13px] hover:bg-white transition-colors"
           >
             Back to Dashboard
           </button>
@@ -308,7 +308,7 @@ export default function RepositoryPage({ params }: PageProps) {
   const dateStr = new Date(repo.upload_date).toLocaleDateString();
 
   return (
-    <div className="flex h-screen bg-[#09090B] overflow-hidden">
+    <div className="flex h-screen bg-[var(--background)] overflow-hidden">
       <RepoSidebar 
         repo={repo} 
         chatSessions={chatSessions}
@@ -323,24 +323,24 @@ export default function RepositoryPage({ params }: PageProps) {
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="flex items-center justify-between px-6 h-14 border-b border-[#27272A] bg-[#09090B] flex-shrink-0">
+        <header className="flex items-center justify-between px-6 h-14 border-b border-[var(--border)] bg-[var(--background)] flex-shrink-0">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-[15px] font-semibold text-[#FAFAFA]">{repo.name}</h1>
-            <div className="flex items-center gap-2 text-[13px] text-[#A1A1AA]">
+            <h1 className="text-[15px] font-semibold text-[var(--primary-text)]">{repo.name}</h1>
+            <div className="flex items-center gap-2 text-[13px] text-[var(--secondary-text)]">
               {repo.file_count !== undefined && (
                 <>
                   <span>{repo.file_count} files</span>
-                  <span className="text-[#3f3f46]">•</span>
+                  <span className="text-[var(--placeholder-text)]">•</span>
                 </>
               )}
               <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 text-[11px] font-medium border border-emerald-900 capitalize">
                 {repo.status}
               </span>
-              <span className="text-[#3f3f46]">•</span>
+              <span className="text-[var(--placeholder-text)]">•</span>
               {repo.languages && repo.languages.length > 0 && (
                 <>
                   <span>{repo.languages.slice(0, 3).join(" • ")}</span>
-                  <span className="text-[#3f3f46]">•</span>
+                  <span className="text-[var(--placeholder-text)]">•</span>
                 </>
               )}
               <span>Uploaded {dateStr}</span>
@@ -354,7 +354,7 @@ export default function RepositoryPage({ params }: PageProps) {
             )}
             <button 
               onClick={handleReindex}
-              className="px-3 py-1.5 rounded-[8px] border border-[#27272A] text-[#A1A1AA] text-[12px] hover:text-[#FAFAFA] hover:bg-[#111113] transition-all mr-2"
+              className="px-3 py-1.5 rounded-[8px] border border-[var(--border)] text-[var(--secondary-text)] text-[12px] hover:text-[var(--primary-text)] hover:bg-[var(--surface)] transition-all mr-2"
             >
               Re-index
             </button>
@@ -368,13 +368,13 @@ export default function RepositoryPage({ params }: PageProps) {
               <div className="flex-1 overflow-y-auto px-8 py-8 space-y-10">
                 {messages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center">
-                    <div className="w-16 h-16 bg-[#1a1a1d] rounded-full flex items-center justify-center mb-6">
-                      <Sparkles size={32} className="text-[#A1A1AA]" />
+                    <div className="w-16 h-16 bg-[var(--surface-hover)] rounded-full flex items-center justify-center mb-6">
+                      <Sparkles size={32} className="text-[var(--secondary-text)]" />
                     </div>
-                    <h3 className="text-[20px] font-semibold text-[#FAFAFA] mb-2">
+                    <h3 className="text-[20px] font-semibold text-[var(--primary-text)] mb-2">
                       Ask anything about {repo.name}
                     </h3>
-                    <p className="text-[14px] text-[#A1A1AA] max-w-md">
+                    <p className="text-[14px] text-[var(--secondary-text)] max-w-md">
                       CodeBase AI has analyzed your repository. You can now ask questions about the architecture, logic, or request specific code explanations.
                     </p>
                     <div className="mt-8 flex flex-wrap justify-center gap-2 max-w-2xl">
@@ -382,7 +382,7 @@ export default function RepositoryPage({ params }: PageProps) {
                         <button
                           key={i}
                           onClick={() => handleSend(q)}
-                          className="px-4 py-2 rounded-[8px] border border-[#27272A] bg-[#111113] text-[13px] text-[#A1A1AA] hover:text-[#FAFAFA] hover:border-[#3f3f46] transition-all"
+                          className="px-4 py-2 rounded-[8px] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--secondary-text)] hover:text-[var(--primary-text)] hover:border-[var(--border-hover)] transition-all"
                         >
                           {q}
                         </button>
@@ -400,10 +400,10 @@ export default function RepositoryPage({ params }: PageProps) {
                     ))}
                     
                     {isStreaming && (
-                      <div className="flex items-center gap-2 text-[#A1A1AA] text-[12px] animate-pulse">
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#A1A1AA] animate-bounce" style={{ animationDelay: "0ms" }} />
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#A1A1AA] animate-bounce" style={{ animationDelay: "150ms" }} />
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#A1A1AA] animate-bounce" style={{ animationDelay: "300ms" }} />
+                      <div className="flex items-center gap-2 text-[var(--secondary-text)] text-[12px] animate-pulse">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[var(--secondary-text)] animate-bounce" style={{ animationDelay: "0ms" }} />
+                        <div className="w-1.5 h-1.5 rounded-full bg-[var(--secondary-text)] animate-bounce" style={{ animationDelay: "150ms" }} />
+                        <div className="w-1.5 h-1.5 rounded-full bg-[var(--secondary-text)] animate-bounce" style={{ animationDelay: "300ms" }} />
                       </div>
                     )}
 
@@ -422,7 +422,7 @@ export default function RepositoryPage({ params }: PageProps) {
             <div className="flex-1 overflow-y-auto px-8 py-8">
               <div className="max-w-3xl mx-auto">
                 <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-[24px] font-bold text-[#FAFAFA]">Repository Overview</h2>
+                  <h2 className="text-[24px] font-bold text-[var(--primary-text)]">Repository Overview</h2>
                   <button 
                     onClick={async () => {
                       try {
@@ -432,7 +432,7 @@ export default function RepositoryPage({ params }: PageProps) {
                         // error handled in fetchApi wrapper or toast
                       }
                     }}
-                    className="px-3 py-1.5 rounded-[8px] bg-[#111113] border border-[#27272A] text-[#A1A1AA] text-[12px] hover:text-[#FAFAFA] transition-all"
+                    className="px-3 py-1.5 rounded-[8px] bg-[var(--surface)] border border-[var(--border)] text-[var(--secondary-text)] text-[12px] hover:text-[var(--primary-text)] transition-all"
                   >
                     Regenerate Summary
                   </button>
@@ -443,7 +443,7 @@ export default function RepositoryPage({ params }: PageProps) {
                     <div dangerouslySetInnerHTML={{ __html: repo.summary.replace(/\n/g, '<br/>') }} />
                   </div>
                 ) : (
-                  <div className="text-center py-20 text-[#A1A1AA] text-[14px]">
+                  <div className="text-center py-20 text-[var(--secondary-text)] text-[14px]">
                     No summary generated yet. Click 'Regenerate Summary' to create one.
                   </div>
                 )}

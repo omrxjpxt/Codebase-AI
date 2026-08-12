@@ -8,10 +8,13 @@
 :root {
   --background: #FFFFFF;
   --surface: #F4F4F5;
+  --surface-hover: #E4E4E7;
   --border: #E4E4E7;
+  --border-hover: #D4D4D8;
   --primary-text: #09090B;
   --secondary-text: #71717A;
   --muted-text: #A1A1AA;
+  --placeholder-text: #A1A1AA;
   --code-bg: #F4F4F5;
   --code-border: #E4E4E7;
   --code-text: #3F3F46;
@@ -21,16 +24,46 @@
   --selection-bg: rgba(9, 9, 11, 0.12);
   --focus-ring: rgba(9, 9, 11, 0.4);
   --radius: 12px;
+  --input-bg: #F4F4F5;
+  --input-focus-border: #A1A1AA;
+  --card-bg: #FFFFFF;
+  --hover-bg: #F4F4F5;
+  --spinner-track: #E4E4E7;
+  --spinner-head: #09090B;
+  --btn-primary-bg: #09090B;
+  --btn-primary-text: #FFFFFF;
+  --btn-secondary-bg: #E4E4E7;
+  --btn-secondary-hover: #D4D4D8;
+  --divider-text: #A1A1AA;
+  --kbd-bg: #F4F4F5;
+  --kbd-border: #E4E4E7;
+  --kbd-text: #71717A;
+  --logo-bg: #09090B;
+  --logo-fill: #FFFFFF;
+  --sidebar-bg: #F4F4F5;
+  --sidebar-border: #E4E4E7;
+  --sidebar-hover: #E4E4E7;
+  --sidebar-active: #E4E4E7;
+  --sidebar-icon: #71717A;
+  --modal-bg: #FFFFFF;
+  --modal-overlay: rgba(0, 0, 0, 0.4);
+  --danger-surface: #FEF2F2;
+  --danger-border: rgba(239, 68, 68, 0.2);
+  --checkbox-checked-bg: #09090B;
+  --checkbox-checked-fill: #FFFFFF;
 }
 
 /* ===== Dark theme ===== */
 .dark {
   --background: #09090B;
   --surface: #111113;
+  --surface-hover: #1a1a1d;
   --border: #27272A;
+  --border-hover: #3f3f46;
   --primary-text: #FAFAFA;
   --secondary-text: #A1A1AA;
   --muted-text: #52525b;
+  --placeholder-text: #3f3f46;
   --code-bg: #1a1a1d;
   --code-border: #27272A;
   --code-text: #e4e4e7;
@@ -39,6 +72,33 @@
   --scrollbar-thumb-hover: #3f3f46;
   --selection-bg: rgba(250, 250, 250, 0.15);
   --focus-ring: rgba(250, 250, 250, 0.5);
+  --input-bg: #09090B;
+  --input-focus-border: #52525b;
+  --card-bg: #111113;
+  --hover-bg: #1a1a1d;
+  --spinner-track: #27272A;
+  --spinner-head: #FAFAFA;
+  --btn-primary-bg: #FAFAFA;
+  --btn-primary-text: #09090B;
+  --btn-secondary-bg: #27272A;
+  --btn-secondary-hover: #3f3f46;
+  --divider-text: #52525b;
+  --kbd-bg: #1a1a1d;
+  --kbd-border: #27272A;
+  --kbd-text: #52525b;
+  --logo-bg: #FAFAFA;
+  --logo-fill: #09090B;
+  --sidebar-bg: #111113;
+  --sidebar-border: #27272A;
+  --sidebar-hover: #1a1a1d;
+  --sidebar-active: #1a1a1d;
+  --sidebar-icon: #A1A1AA;
+  --modal-bg: #111113;
+  --modal-overlay: rgba(0, 0, 0, 0.6);
+  --danger-surface: #111113;
+  --danger-border: rgba(239, 68, 68, 0.2);
+  --checkbox-checked-bg: #FAFAFA;
+  --checkbox-checked-fill: #09090B;
 }
 
 * {
@@ -56,7 +116,6 @@ body {
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 a {

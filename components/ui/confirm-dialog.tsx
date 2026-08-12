@@ -98,7 +98,7 @@ export default function ConfirmDialog({
     >
       <div
         className={cn(
-          "bg-[#111113] border border-[#27272A] rounded-[16px] shadow-2xl flex flex-col w-full overflow-hidden",
+          "bg-[var(--surface)] border border-[var(--border)] rounded-[16px] shadow-2xl flex flex-col w-full overflow-hidden",
           "max-w-[440px] transform transition-all duration-200 scale-100 opacity-100"
         )}
         onClick={(e) => e.stopPropagation()}
@@ -108,23 +108,23 @@ export default function ConfirmDialog({
             {icon !== "none" && (
               <div className={cn(
                 "flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center",
-                isDestructive ? "bg-red-500/10 text-red-500" : "bg-[#27272A] text-[#FAFAFA]"
+                isDestructive ? "bg-red-500/10 text-red-500" : "bg-[var(--border)] text-[var(--primary-text)]"
               )}>
                 {icon === "trash" ? <Trash2 size={18} /> : <AlertTriangle size={18} />}
               </div>
             )}
             
             <div className="flex-1 min-w-0 pt-0.5">
-              <h2 id="confirm-dialog-title" className="text-[16px] font-semibold text-[#FAFAFA]">
+              <h2 id="confirm-dialog-title" className="text-[16px] font-semibold text-[var(--primary-text)]">
                 {title}
               </h2>
-              <p id="confirm-dialog-desc" className="text-[14px] text-[#A1A1AA] mt-2 leading-relaxed">
+              <p id="confirm-dialog-desc" className="text-[14px] text-[var(--secondary-text)] mt-2 leading-relaxed">
                 {description}
               </p>
 
               {requireInputMatch && (
                 <div className="mt-4">
-                  <label htmlFor="confirm-input" className="block text-[13px] font-medium text-[#FAFAFA] mb-1.5">
+                  <label htmlFor="confirm-input" className="block text-[13px] font-medium text-[var(--primary-text)] mb-1.5">
                     Type <strong>{requireInputMatch}</strong> to confirm
                   </label>
                   <input
@@ -134,7 +134,7 @@ export default function ConfirmDialog({
                     disabled={isDeleting}
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
-                    className="w-full bg-[#09090B] border border-[#27272A] rounded-lg px-3 py-2 text-[14px] text-[#FAFAFA] focus:outline-none focus:border-[#52525b] transition-colors disabled:opacity-50"
+                    className="w-full bg-[var(--background)] border border-[var(--border)] rounded-lg px-3 py-2 text-[14px] text-[var(--primary-text)] focus:outline-none focus:border-[var(--input-focus-border)] transition-colors disabled:opacity-50"
                     placeholder={requireInputMatch}
                     autoComplete="off"
                     autoCorrect="off"
@@ -145,11 +145,11 @@ export default function ConfirmDialog({
           </div>
         </div>
 
-        <div className="p-4 bg-[#09090B] border-t border-[#27272A] flex justify-end gap-2">
+        <div className="p-4 bg-[var(--background)] border-t border-[var(--border)] flex justify-end gap-2">
           <button
             onClick={onClose}
             disabled={isDeleting}
-            className="px-4 py-2 text-[13px] font-medium text-[#FAFAFA] bg-transparent hover:bg-[#27272A] rounded-lg transition-colors disabled:opacity-50"
+            className="px-4 py-2 text-[13px] font-medium text-[var(--primary-text)] bg-transparent hover:bg-[var(--border)] rounded-lg transition-colors disabled:opacity-50"
           >
             {cancelText}
           </button>
@@ -161,7 +161,7 @@ export default function ConfirmDialog({
               "px-4 py-2 text-[13px] font-medium rounded-lg transition-all flex items-center gap-2",
               isDestructive 
                 ? "bg-red-500 text-white hover:bg-red-600 disabled:bg-red-500/50 disabled:text-white/50" 
-                : "bg-[#FAFAFA] text-[#09090B] hover:bg-white disabled:bg-[#FAFAFA]/50",
+                : "bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-white disabled:bg-[var(--btn-primary-bg)]/50",
               (isConfirmDisabled && !isDeleting) && "opacity-50 cursor-not-allowed"
             )}
           >

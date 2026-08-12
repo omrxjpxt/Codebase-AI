@@ -17,6 +17,11 @@ export default function SettingsPage() {
     type: "clear-history" | "delete-account" | "logout" | null;
   }>({ type: null });
   const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   useEffect(() => {
     fetchApi("/auth/me")
@@ -71,18 +76,18 @@ export default function SettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#09090B] flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-[#27272A] border-t-[#FAFAFA] rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-[var(--border)] border-t-[var(--spinner-head)] rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#09090B] text-[#FAFAFA] pb-20">
-      <header className="border-b border-[#27272A] bg-[#09090B] sticky top-0 z-10">
+    <div className="min-h-screen bg-[var(--background)] text-[var(--primary-text)] pb-20">
+      <header className="border-b border-[var(--border)] bg-[var(--background)] sticky top-0 z-10">
         <div className="max-w-[800px] mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-[14px] text-[#A1A1AA] hover:text-[#FAFAFA] transition-colors">
+            <Link href="/dashboard" className="text-[14px] text-[var(--secondary-text)] hover:text-[var(--primary-text)] transition-colors">
               ← Back to Dashboard
             </Link>
           </div>
@@ -90,28 +95,28 @@ export default function SettingsPage() {
       </header>
 
       <main className="max-w-[800px] mx-auto px-6 pt-12">
-        <h1 className="text-[28px] font-bold text-[#FAFAFA] mb-8 tracking-tight">Settings</h1>
+        <h1 className="text-[28px] font-bold text-[var(--primary-text)] mb-8 tracking-tight">Settings</h1>
 
         <div className="space-y-8">
           {/* Account Information */}
           <section>
-            <h2 className="text-[16px] font-semibold text-[#FAFAFA] mb-4 flex items-center gap-2">
-              <User size={18} className="text-[#A1A1AA]" />
+            <h2 className="text-[16px] font-semibold text-[var(--primary-text)] mb-4 flex items-center gap-2">
+              <User size={18} className="text-[var(--secondary-text)]" />
               Account Information
             </h2>
-            <div className="bg-[#111113] border border-[#27272A] rounded-xl p-5">
-              <div className="flex items-center justify-between mb-4 pb-4 border-b border-[#27272A]">
+            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5">
+              <div className="flex items-center justify-between mb-4 pb-4 border-b border-[var(--border)]">
                 <div>
-                  <p className="text-[14px] font-medium text-[#FAFAFA]">Email Address</p>
-                  <p className="text-[13px] text-[#A1A1AA] mt-1">{user?.email}</p>
+                  <p className="text-[14px] font-medium text-[var(--primary-text)]">Email Address</p>
+                  <p className="text-[13px] text-[var(--secondary-text)] mt-1">{user?.email}</p>
                 </div>
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[14px] font-medium text-[#FAFAFA]">Log out</p>
-                  <p className="text-[13px] text-[#A1A1AA] mt-1">Sign out of your account on this device.</p>
+                  <p className="text-[14px] font-medium text-[var(--primary-text)]">Log out</p>
+                  <p className="text-[13px] text-[var(--secondary-text)] mt-1">Sign out of your account on this device.</p>
                 </div>
-                <button onClick={() => setDialogState({ type: "logout" })} className="px-4 py-2 bg-[#27272A] hover:bg-[#3f3f46] text-[#FAFAFA] text-[13px] font-medium rounded-lg transition-colors flex items-center gap-2">
+                <button onClick={() => setDialogState({ type: "logout" })} className="px-4 py-2 bg-[var(--border)] hover:bg-[var(--border-hover)] text-[var(--primary-text)] text-[13px] font-medium rounded-lg transition-colors flex items-center gap-2">
                   <LogOut size={14} />
                   Log out
                 </button>
@@ -121,35 +126,35 @@ export default function SettingsPage() {
 
           {/* Preferences */}
           <section>
-            <h2 className="text-[16px] font-semibold text-[#FAFAFA] mb-4 flex items-center gap-2">
-              <Monitor size={18} className="text-[#A1A1AA]" />
+            <h2 className="text-[16px] font-semibold text-[var(--primary-text)] mb-4 flex items-center gap-2">
+              <Monitor size={18} className="text-[var(--secondary-text)]" />
               Preferences
             </h2>
-            <div className="bg-[#111113] border border-[#27272A] rounded-xl p-5 space-y-6">
+            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5 space-y-6">
               
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[14px] font-medium text-[#FAFAFA]">Theme</p>
-                  <p className="text-[13px] text-[#A1A1AA] mt-1">Select your preferred application theme.</p>
+                  <p className="text-[14px] font-medium text-[var(--primary-text)]">Theme</p>
+                  <p className="text-[13px] text-[var(--secondary-text)] mt-1">Select your preferred application theme.</p>
                 </div>
-                <div className="flex bg-[#09090B] border border-[#27272A] rounded-lg p-1">
+                <div className="flex bg-[var(--background)] border border-[var(--border)] rounded-lg p-1">
                   <button 
                     onClick={() => setTheme("light")} 
-                    className={`p-2 rounded-md transition-colors ${theme === 'light' ? 'bg-[#27272A] text-white' : 'text-[#A1A1AA] hover:text-white'}`}
+                    className={`p-2 rounded-md transition-colors ${mounted && theme === 'light' ? 'bg-[var(--border)] text-[var(--primary-text)]' : 'text-[var(--secondary-text)] hover:text-[var(--primary-text)]'}`}
                     title="Light mode"
                   >
                     <Sun size={16} />
                   </button>
                   <button 
                     onClick={() => setTheme("dark")} 
-                    className={`p-2 rounded-md transition-colors ${theme === 'dark' ? 'bg-[#27272A] text-white' : 'text-[#A1A1AA] hover:text-white'}`}
+                    className={`p-2 rounded-md transition-colors ${mounted && theme === 'dark' ? 'bg-[var(--border)] text-[var(--primary-text)]' : 'text-[var(--secondary-text)] hover:text-[var(--primary-text)]'}`}
                     title="Dark mode"
                   >
                     <Moon size={16} />
                   </button>
                   <button 
                     onClick={() => setTheme("system")} 
-                    className={`p-2 rounded-md transition-colors ${theme === 'system' ? 'bg-[#27272A] text-white' : 'text-[#A1A1AA] hover:text-white'}`}
+                    className={`p-2 rounded-md transition-colors ${mounted && theme === 'system' ? 'bg-[var(--border)] text-[var(--primary-text)]' : 'text-[var(--secondary-text)] hover:text-[var(--primary-text)]'}`}
                     title="System theme"
                   >
                     <Monitor size={16} />
@@ -157,13 +162,13 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-[#27272A] flex items-center justify-between">
+              <div className="pt-6 border-t border-[var(--border)] flex items-center justify-between">
                 <div>
-                  <p className="text-[14px] font-medium text-[#FAFAFA]">Preferred AI Model</p>
-                  <p className="text-[13px] text-[#A1A1AA] mt-1">The model used for answering repository questions.</p>
+                  <p className="text-[14px] font-medium text-[var(--primary-text)]">Preferred AI Model</p>
+                  <p className="text-[13px] text-[var(--secondary-text)] mt-1">The model used for answering repository questions.</p>
                 </div>
                 <div>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#09090B] border border-[#27272A] text-[#A1A1AA] text-[13px] font-medium rounded-lg opacity-80 cursor-not-allowed">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--background)] border border-[var(--border)] text-[var(--secondary-text)] text-[13px] font-medium rounded-lg opacity-80 cursor-not-allowed">
                     <Database size={14} />
                     Gemini 2.5 Flash
                   </span>
@@ -178,16 +183,16 @@ export default function SettingsPage() {
               <ShieldAlert size={18} />
               Danger Zone
             </h2>
-            <div className="bg-[#111113] border border-red-500/20 rounded-xl p-5 space-y-6">
+            <div className="bg-[var(--surface)] border border-red-500/20 rounded-xl p-5 space-y-6">
               
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[14px] font-medium text-[#FAFAFA]">Clear Chat History</p>
-                  <p className="text-[13px] text-[#A1A1AA] mt-1">Permanently delete all chat sessions across all repositories.</p>
+                  <p className="text-[14px] font-medium text-[var(--primary-text)]">Clear Chat History</p>
+                  <p className="text-[13px] text-[var(--secondary-text)] mt-1">Permanently delete all chat sessions across all repositories.</p>
                 </div>
                 <button 
                   onClick={() => setDialogState({ type: "clear-history" })} 
-                  className="px-4 py-2 border border-[#27272A] hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-500 text-[#FAFAFA] text-[13px] font-medium rounded-lg transition-colors flex items-center gap-2"
+                  className="px-4 py-2 border border-[var(--border)] hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-500 text-[var(--primary-text)] text-[13px] font-medium rounded-lg transition-colors flex items-center gap-2"
                 >
                   <Trash2 size={14} />
                   Clear History
@@ -196,8 +201,8 @@ export default function SettingsPage() {
 
               <div className="pt-6 border-t border-red-500/20 flex items-center justify-between">
                 <div>
-                  <p className="text-[14px] font-medium text-[#FAFAFA]">Delete Account</p>
-                  <p className="text-[13px] text-[#A1A1AA] mt-1">Permanently delete your account and all associated data.</p>
+                  <p className="text-[14px] font-medium text-[var(--primary-text)]">Delete Account</p>
+                  <p className="text-[13px] text-[var(--secondary-text)] mt-1">Permanently delete your account and all associated data.</p>
                 </div>
                 <button 
                   onClick={() => setDialogState({ type: "delete-account" })} 
@@ -212,7 +217,7 @@ export default function SettingsPage() {
           </section>
 
           <div className="pt-8 text-center">
-            <p className="text-[12px] text-[#52525b]">CodeBase AI • Version 0.1.0 (Production Build)</p>
+            <p className="text-[12px] text-[var(--muted-text)]">CodeBase AI • Version 0.1.0 (Production Build)</p>
           </div>
 
         </div>

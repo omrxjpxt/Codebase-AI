@@ -6,10 +6,10 @@ interface StatCardProps {
 export default function StatCard({ value, label }: StatCardProps) {
   return (
     <div className="text-center">
-      <p className="text-[40px] md:text-[52px] font-bold text-[#FAFAFA] tracking-tight leading-none">
+      <p className="text-[40px] md:text-[52px] font-bold text-[var(--primary-text)] tracking-tight leading-none">
         {value}
       </p>
-      <p className="text-[14px] text-[#A1A1AA] mt-2 tracking-wide uppercase text-[12px]">
+      <p className="text-[14px] text-[var(--secondary-text)] mt-2 tracking-wide uppercase text-[12px]">
         {label}
       </p>
     </div>

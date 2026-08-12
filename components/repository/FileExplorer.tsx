@@ -93,9 +93,9 @@ export default function FileExplorer({ repositoryId, onFileClick }: { repository
 
   const getFileIcon = (filename: string, language?: string) => {
     if (language === 'typescript' || language === 'javascript' || filename.endsWith('.tsx') || filename.endsWith('.ts')) return <FileCode size={14} className="text-[#3b82f6]" />;
-    if (filename.endsWith('.md') || filename.endsWith('.txt')) return <FileText size={14} className="text-[#A1A1AA]" />;
+    if (filename.endsWith('.md') || filename.endsWith('.txt')) return <FileText size={14} className="text-[var(--secondary-text)]" />;
     if (filename.endsWith('.json')) return <FileCode size={14} className="text-[#eab308]" />;
-    return <FileIcon size={14} className="text-[#A1A1AA]" />;
+    return <FileIcon size={14} className="text-[var(--secondary-text)]" />;
   };
 
   const renderTree = (nodes: FileNode[], level = 0) => {
@@ -108,7 +108,7 @@ export default function FileExplorer({ repositoryId, onFileClick }: { repository
         return (
           <div key={node.path} className="w-full">
             <div 
-              className="flex items-center gap-1.5 py-1.5 px-2 hover:bg-[#111113] cursor-pointer rounded-md text-[13px] text-[#A1A1AA] transition-colors"
+              className="flex items-center gap-1.5 py-1.5 px-2 hover:bg-[var(--surface)] cursor-pointer rounded-md text-[13px] text-[var(--secondary-text)] transition-colors"
               style={{ paddingLeft: `${level * 12 + 8}px` }}
               onClick={() => toggleFolder(node.path)}
             >
@@ -126,7 +126,7 @@ export default function FileExplorer({ repositoryId, onFileClick }: { repository
       return (
         <div 
           key={node.path}
-          className="flex items-center justify-between py-1.5 px-2 hover:bg-[#111113] cursor-pointer rounded-md text-[13px] text-[#FAFAFA] transition-colors group"
+          className="flex items-center justify-between py-1.5 px-2 hover:bg-[var(--surface)] cursor-pointer rounded-md text-[13px] text-[var(--primary-text)] transition-colors group"
           style={{ paddingLeft: `${level * 12 + 24}px` }}
           onClick={() => onFileClick(node.id)}
         >
@@ -135,7 +135,7 @@ export default function FileExplorer({ repositoryId, onFileClick }: { repository
             <span className="truncate group-hover:text-blue-400 transition-colors">{node.name}</span>
           </div>
           {node.size && (
-            <span className="text-[11px] text-[#52525b] opacity-0 group-hover:opacity-100 transition-opacity">
+            <span className="text-[11px] text-[var(--muted-text)] opacity-0 group-hover:opacity-100 transition-opacity">
               {(node.size / 1024).toFixed(1)} KB
             </span>
           )}
@@ -145,26 +145,26 @@ export default function FileExplorer({ repositoryId, onFileClick }: { repository
   };
 
   if (isLoading) {
-    return <div className="p-8 text-[#A1A1AA] text-[13px] text-center">Loading files...</div>;
+    return <div className="p-8 text-[var(--secondary-text)] text-[13px] text-center">Loading files...</div>;
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#09090B] border border-[#27272A] rounded-xl overflow-hidden max-w-3xl mx-auto w-full">
-      <div className="p-3 border-b border-[#27272A] bg-[#111113]">
+    <div className="flex flex-col h-full bg-[var(--background)] border border-[var(--border)] rounded-xl overflow-hidden max-w-3xl mx-auto w-full">
+      <div className="p-3 border-b border-[var(--border)] bg-[var(--surface)]">
         <div className="relative">
-          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#52525b]" />
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--muted-text)]" />
           <input 
             type="text"
             placeholder="Search files..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#09090B] border border-[#27272A] rounded-md py-1.5 pl-8 pr-3 text-[13px] text-[#FAFAFA] focus:outline-none focus:border-[#52525b] transition-colors"
+            className="w-full bg-[var(--background)] border border-[var(--border)] rounded-md py-1.5 pl-8 pr-3 text-[13px] text-[var(--primary-text)] focus:outline-none focus:border-[var(--input-focus-border)] transition-colors"
           />
         </div>
       </div>
       <div className="flex-1 overflow-y-auto p-2">
         {tree.length === 0 ? (
-          <p className="text-center text-[#52525b] text-[13px] mt-10">No files found.</p>
+          <p className="text-center text-[var(--muted-text)] text-[13px] mt-10">No files found.</p>
         ) : (
           renderTree(tree)
         )}

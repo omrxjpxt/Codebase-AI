@@ -38,8 +38,8 @@ export default function HeaderActions() {
           }}
           className={`w-8 h-8 rounded-[8px] flex items-center justify-center transition-all ${
             showNotifications 
-              ? "text-[#FAFAFA] bg-[#1a1a1d] border border-[#27272A]" 
-              : "text-[#52525b] hover:text-[#A1A1AA] hover:bg-[#111113] border border-transparent"
+              ? "text-[var(--primary-text)] bg-[var(--surface-hover)] border border-[var(--border)]" 
+              : "text-[var(--muted-text)] hover:text-[var(--secondary-text)] hover:bg-[var(--surface)] border border-transparent"
           }`}
           aria-label="Notifications"
         >
@@ -47,14 +47,14 @@ export default function HeaderActions() {
         </button>
 
         {showNotifications && (
-          <div className="absolute right-0 top-full mt-2 w-72 bg-[#111113] border border-[#27272A] rounded-[10px] shadow-2xl z-50 overflow-hidden">
-            <div className="p-3 border-b border-[#27272A]">
-              <h3 className="text-[13px] font-semibold text-[#FAFAFA]">Notifications</h3>
+          <div className="absolute right-0 top-full mt-2 w-72 bg-[var(--surface)] border border-[var(--border)] rounded-[10px] shadow-2xl z-50 overflow-hidden">
+            <div className="p-3 border-b border-[var(--border)]">
+              <h3 className="text-[13px] font-semibold text-[var(--primary-text)]">Notifications</h3>
             </div>
             <div className="p-8 flex flex-col items-center justify-center text-center">
-              <Bell size={24} className="text-[#3f3f46] mb-2" />
-              <p className="text-[13px] text-[#A1A1AA] font-medium">No notifications yet</p>
-              <p className="text-[12px] text-[#52525b] mt-1">When you get updates, they'll show up here.</p>
+              <Bell size={24} className="text-[var(--placeholder-text)] mb-2" />
+              <p className="text-[13px] text-[var(--secondary-text)] font-medium">No notifications yet</p>
+              <p className="text-[12px] text-[var(--muted-text)] mt-1">When you get updates, they'll show up here.</p>
             </div>
           </div>
         )}
@@ -69,8 +69,8 @@ export default function HeaderActions() {
           }}
           className={`w-8 h-8 rounded-[8px] flex items-center justify-center transition-all ${
             showHelp 
-              ? "text-[#FAFAFA] bg-[#1a1a1d] border border-[#27272A]" 
-              : "text-[#52525b] hover:text-[#A1A1AA] hover:bg-[#111113] border border-transparent"
+              ? "text-[var(--primary-text)] bg-[var(--surface-hover)] border border-[var(--border)]" 
+              : "text-[var(--muted-text)] hover:text-[var(--secondary-text)] hover:bg-[var(--surface)] border border-transparent"
           }`}
           aria-label="Help & Resources"
         >
@@ -78,11 +78,11 @@ export default function HeaderActions() {
         </button>
 
         {showHelp && (
-          <div className="absolute right-0 top-full mt-2 w-56 bg-[#111113] border border-[#27272A] rounded-[10px] shadow-2xl z-50 p-1">
+          <div className="absolute right-0 top-full mt-2 w-56 bg-[var(--surface)] border border-[var(--border)] rounded-[10px] shadow-2xl z-50 p-1">
             <Link 
               href="/docs" 
               onClick={() => setShowHelp(false)}
-              className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#1a1a1d] rounded-[6px] transition-colors"
+              className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--secondary-text)] hover:text-[var(--primary-text)] hover:bg-[var(--surface-hover)] rounded-[6px] transition-colors"
             >
               <Book size={14} />
               Documentation
@@ -92,16 +92,16 @@ export default function HeaderActions() {
                 setShowHelp(false);
                 setShowShortcuts(true);
               }}
-              className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#1a1a1d] rounded-[6px] transition-colors w-full text-left"
+              className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--secondary-text)] hover:text-[var(--primary-text)] hover:bg-[var(--surface-hover)] rounded-[6px] transition-colors w-full text-left"
             >
               <Keyboard size={14} />
               Keyboard Shortcuts
             </button>
-            <div className="h-px bg-[#27272A] my-1 mx-2" />
+            <div className="h-px bg-[var(--border)] my-1 mx-2" />
             <a 
               href="mailto:support@codebase.ai" 
               onClick={() => setShowHelp(false)}
-              className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#1a1a1d] rounded-[6px] transition-colors"
+              className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--secondary-text)] hover:text-[var(--primary-text)] hover:bg-[var(--surface-hover)] rounded-[6px] transition-colors"
             >
               <LifeBuoy size={14} />
               Support

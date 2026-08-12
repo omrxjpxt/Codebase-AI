@@ -91,13 +91,13 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="flex h-screen bg-[#09090B] overflow-hidden">
+    <div className="flex h-screen bg-[var(--background)] overflow-hidden">
       <AppSidebar />
 
       {/* Main area */}
       <div className="flex-1 flex flex-col ml-14 overflow-hidden">
         {/* Top bar */}
-        <header className="flex items-center gap-4 px-6 h-14 border-b border-[#27272A] bg-[#09090B] flex-shrink-0">
+        <header className="flex items-center gap-4 px-6 h-14 border-b border-[var(--border)] bg-[var(--background)] flex-shrink-0">
           <SearchModal />
           <HeaderActions />
         </header>
@@ -106,7 +106,7 @@ export default function DashboardPage() {
         <main className="flex-1 overflow-y-auto p-8 relative">
           {isLoading ? (
             <div className="absolute inset-0 flex items-center justify-center">
-              <Loader2 className="animate-spin text-[#52525b]" size={32} />
+              <Loader2 className="animate-spin text-[var(--muted-text)]" size={32} />
             </div>
           ) : error ? (
             <div className="absolute inset-0 flex items-center justify-center flex-col">
@@ -126,10 +126,10 @@ export default function DashboardPage() {
               {/* Greeting */}
               <div className="flex items-start justify-between mb-10">
                 <div>
-                  <h1 className="text-[32px] font-bold text-[#FAFAFA] tracking-tight leading-tight">
+                  <h1 className="text-[32px] font-bold text-[var(--primary-text)] tracking-tight leading-tight">
                     Good Evening, {user?.email?.split("@")[0] || "Developer"}
                   </h1>
-                  <p className="text-[14px] text-[#A1A1AA] mt-1">
+                  <p className="text-[14px] text-[var(--secondary-text)] mt-1">
                     {repositories.length} repositories indexed
                   </p>
                 </div>
@@ -137,7 +137,7 @@ export default function DashboardPage() {
                   <button
                     id="ask-ai-btn"
                     onClick={() => setIsAskAiModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-[8px] border border-[#27272A] text-[13px] text-[#A1A1AA] hover:text-[#FAFAFA] hover:border-[#3f3f46] transition-all font-medium"
+                    className="flex items-center gap-2 px-4 py-2 rounded-[8px] border border-[var(--border)] text-[13px] text-[var(--secondary-text)] hover:text-[var(--primary-text)] hover:border-[var(--border-hover)] transition-all font-medium"
                   >
                     <Sparkles size={14} />
                     Ask AI
@@ -145,7 +145,7 @@ export default function DashboardPage() {
                   <button
                     onClick={() => setIsUploadModalOpen(true)}
                     id="upload-repo-btn"
-                    className="flex items-center gap-2 px-4 py-2 rounded-[8px] border border-[#27272A] text-[13px] text-[#FAFAFA] hover:border-[#3f3f46] hover:bg-[#111113] transition-all font-medium"
+                    className="flex items-center gap-2 px-4 py-2 rounded-[8px] border border-[var(--border)] text-[13px] text-[var(--primary-text)] hover:border-[var(--border-hover)] hover:bg-[var(--surface)] transition-all font-medium"
                   >
                     <Upload size={14} />
                     Upload
@@ -155,17 +155,17 @@ export default function DashboardPage() {
 
               {repositories.length === 0 ? (
                 /* Empty state */
-                <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-[#27272A] rounded-[14px] bg-[#111113]/50 mt-10">
-                  <div className="w-16 h-16 bg-[#1a1a1d] rounded-full flex items-center justify-center mb-6">
-                    <FolderPlus size={32} className="text-[#A1A1AA]" />
+                <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-[var(--border)] rounded-[14px] bg-[var(--surface)]/50 mt-10">
+                  <div className="w-16 h-16 bg-[var(--surface-hover)] rounded-full flex items-center justify-center mb-6">
+                    <FolderPlus size={32} className="text-[var(--secondary-text)]" />
                   </div>
-                  <h3 className="text-[18px] font-semibold text-[#FAFAFA] mb-2">No repositories yet</h3>
-                  <p className="text-[14px] text-[#A1A1AA] text-center max-w-sm mb-8">
+                  <h3 className="text-[18px] font-semibold text-[var(--primary-text)] mb-2">No repositories yet</h3>
+                  <p className="text-[14px] text-[var(--secondary-text)] text-center max-w-sm mb-8">
                     Upload your first codebase as a ZIP file to start analyzing, searching, and chatting with your code.
                   </p>
                   <button
                     onClick={() => setIsUploadModalOpen(true)}
-                    className="px-6 py-3 rounded-[10px] bg-[#FAFAFA] text-[#09090B] text-[14px] font-semibold hover:bg-white transition-all flex items-center gap-2"
+                    className="px-6 py-3 rounded-[10px] bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] text-[14px] font-semibold hover:bg-white transition-all flex items-center gap-2"
                   >
                     <Upload size={16} />
                     Upload Repository
@@ -179,12 +179,12 @@ export default function DashboardPage() {
                     {/* Active Repositories */}
                     <div className="mb-10">
                       <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-[11px] font-semibold text-[#52525b] uppercase tracking-widest">
+                        <h2 className="text-[11px] font-semibold text-[var(--muted-text)] uppercase tracking-widest">
                           Active Repositories
                         </h2>
                         <Link
                           href="#"
-                          className="flex items-center gap-1 text-[12px] text-[#A1A1AA] hover:text-[#FAFAFA] transition-colors"
+                          className="flex items-center gap-1 text-[12px] text-[var(--secondary-text)] hover:text-[var(--primary-text)] transition-colors"
                         >
                           View All
                           <ArrowRight size={12} />
@@ -199,12 +199,12 @@ export default function DashboardPage() {
 
                     {/* Recent Questions */}
                     <div>
-                      <h2 className="text-[11px] font-semibold text-[#52525b] uppercase tracking-widest mb-4">
+                      <h2 className="text-[11px] font-semibold text-[var(--muted-text)] uppercase tracking-widest mb-4">
                         Recent Questions
                       </h2>
                       <div className="grid grid-cols-2 gap-2.5">
                         {chatSessions.length === 0 ? (
-                          <div className="col-span-2 text-[12px] text-[#52525b] italic">
+                          <div className="col-span-2 text-[12px] text-[var(--muted-text)] italic">
                             No chat sessions yet. Ask AI to start one.
                           </div>
                         ) : (
@@ -220,12 +220,12 @@ export default function DashboardPage() {
 
                   {/* Right column — Recent Activity */}
                   <div>
-                    <h2 className="text-[11px] font-semibold text-[#52525b] uppercase tracking-widest mb-4">
+                    <h2 className="text-[11px] font-semibold text-[var(--muted-text)] uppercase tracking-widest mb-4">
                       Recent Activity
                     </h2>
                     <div>
                       {/* Empty activity state since we don't have backend for this yet */}
-                      <p className="text-[13px] text-[#52525b] italic">No recent activity.</p>
+                      <p className="text-[13px] text-[var(--muted-text)] italic">No recent activity.</p>
                     </div>
                   </div>
                 </div>

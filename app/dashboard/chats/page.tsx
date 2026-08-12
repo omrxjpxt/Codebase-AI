@@ -81,22 +81,22 @@ export default function ChatsPage() {
   );
 
   return (
-    <div className="flex h-screen bg-[#09090B] overflow-hidden">
+    <div className="flex h-screen bg-[var(--background)] overflow-hidden">
       <AppSidebar />
       <div className="flex-1 flex flex-col ml-14 overflow-hidden">
-        <header className="flex items-center justify-between px-8 h-16 border-b border-[#27272A] bg-[#09090B] flex-shrink-0">
-          <h1 className="text-[16px] font-semibold text-[#FAFAFA] flex items-center gap-2">
-            <MessageSquare size={18} className="text-[#A1A1AA]" />
+        <header className="flex items-center justify-between px-8 h-16 border-b border-[var(--border)] bg-[var(--background)] flex-shrink-0">
+          <h1 className="text-[16px] font-semibold text-[var(--primary-text)] flex items-center gap-2">
+            <MessageSquare size={18} className="text-[var(--secondary-text)]" />
             All Chats
           </h1>
           <div className="relative w-64">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#52525b]" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted-text)]" />
             <input 
               type="text"
               placeholder="Search chats..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#111113] border border-[#27272A] rounded-lg py-1.5 pl-9 pr-3 text-[13px] text-[#FAFAFA] focus:outline-none focus:border-[#52525b] transition-colors"
+              className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg py-1.5 pl-9 pr-3 text-[13px] text-[var(--primary-text)] focus:outline-none focus:border-[var(--input-focus-border)] transition-colors"
             />
           </div>
         </header>
@@ -105,10 +105,10 @@ export default function ChatsPage() {
           <div className="max-w-4xl mx-auto space-y-4">
             {isLoading ? (
               <div className="flex justify-center py-10">
-                <Loader2 className="animate-spin text-[#52525b]" size={24} />
+                <Loader2 className="animate-spin text-[var(--muted-text)]" size={24} />
               </div>
             ) : filteredSessions.length === 0 ? (
-              <div className="text-center py-20 text-[#A1A1AA] text-[14px]">
+              <div className="text-center py-20 text-[var(--secondary-text)] text-[14px]">
                 {searchQuery ? "No chats match your search." : "No chat sessions found."}
               </div>
             ) : (
@@ -116,15 +116,15 @@ export default function ChatsPage() {
                 <Link
                   href={`/repository/${session.repository_id}?chat=${session.id}`}
                   key={session.id}
-                  className="block bg-[#111113] border border-[#27272A] rounded-xl p-5 hover:border-[#3f3f46] transition-colors group"
+                  className="block bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5 hover:border-[var(--border-hover)] transition-colors group"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0 pr-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Folder size={14} className="text-blue-400" />
-                        <span className="text-[12px] font-medium text-[#A1A1AA]">{session.repository_name}</span>
-                        <span className="text-[#3f3f46] text-[12px]">•</span>
-                        <span className="text-[12px] text-[#52525b]">
+                        <span className="text-[12px] font-medium text-[var(--secondary-text)]">{session.repository_name}</span>
+                        <span className="text-[var(--placeholder-text)] text-[12px]">•</span>
+                        <span className="text-[12px] text-[var(--muted-text)]">
                           {new Date(session.created_at).toLocaleDateString()}
                         </span>
                       </div>
@@ -139,15 +139,15 @@ export default function ChatsPage() {
                             if (e.key === "Enter") handleRename(e, session.id, editTitle);
                             if (e.key === "Escape") setEditingId(null);
                           }}
-                          className="bg-transparent border-b border-[#52525b] outline-none text-[#FAFAFA] text-[15px] font-medium w-full pb-1 mb-2"
+                          className="bg-transparent border-b border-[#52525b] outline-none text-[var(--primary-text)] text-[15px] font-medium w-full pb-1 mb-2"
                           autoFocus
                           onClick={(e) => e.preventDefault()}
                         />
                       ) : (
-                        <h3 className="text-[15px] font-medium text-[#FAFAFA] truncate mb-2">{session.title}</h3>
+                        <h3 className="text-[15px] font-medium text-[var(--primary-text)] truncate mb-2">{session.title}</h3>
                       )}
                       
-                      <p className="text-[13px] text-[#A1A1AA] line-clamp-2 leading-relaxed">
+                      <p className="text-[13px] text-[var(--secondary-text)] line-clamp-2 leading-relaxed">
                         {session.last_message_preview || <span className="italic">Empty chat</span>}
                       </p>
                     </div>
@@ -160,7 +160,7 @@ export default function ChatsPage() {
                             setEditTitle(session.title);
                             setEditingId(session.id);
                           }}
-                          className="w-8 h-8 flex items-center justify-center rounded-lg text-[#52525b] hover:text-[#FAFAFA] hover:bg-[#27272A] transition-colors"
+                          className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted-text)] hover:text-[var(--primary-text)] hover:bg-[var(--border)] transition-colors"
                           title="Rename Chat"
                         >
                           <Edit2 size={14} />
@@ -168,12 +168,12 @@ export default function ChatsPage() {
                       )}
                       <button
                         onClick={(e) => handleDeleteClick(e, session.id)}
-                        className="w-8 h-8 flex items-center justify-center rounded-lg text-[#52525b] hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                        className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted-text)] hover:text-red-400 hover:bg-red-400/10 transition-colors"
                         title="Delete Chat"
                       >
                         <Trash2 size={14} />
                       </button>
-                      <div className="w-8 h-8 flex items-center justify-center rounded-lg text-[#52525b] group-hover:text-[#FAFAFA] transition-colors">
+                      <div className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--muted-text)] group-hover:text-[var(--primary-text)] transition-colors">
                         <ArrowRight size={16} />
                       </div>
                     </div>

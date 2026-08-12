@@ -22,7 +22,7 @@ export default function SourcePill({ source, onClick, className }: SourcePillPro
     <button
       onClick={() => onClick?.(source)}
       className={cn(
-        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] bg-[#111113] border border-[#27272A] hover:border-[#3f3f46] transition-all text-[12px] font-mono group",
+        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--border-hover)] transition-all text-[12px] font-mono group",
         className
       )}
     >
@@ -30,14 +30,14 @@ export default function SourcePill({ source, onClick, className }: SourcePillPro
         size={12}
         className={cn(
           "flex-shrink-0",
-          source.language ? langColors[source.language] ?? "text-[#52525b]" : "text-[#52525b]"
+          source.language ? langColors[source.language] ?? "text-[var(--muted-text)]" : "text-[var(--muted-text)]"
         )}
     />
-    <span className="text-[#A1A1AA] group-hover:text-[#FAFAFA] transition-colors">
+    <span className="text-[var(--secondary-text)] group-hover:text-[var(--primary-text)] transition-colors">
       {source.file || source.name}
     </span>
     {source.score !== undefined && (
-      <span className="text-[10px] text-[#52525b] ml-1 bg-[#18181b] px-1.5 py-0.5 rounded-[4px]">
+      <span className="text-[10px] text-[var(--muted-text)] ml-1 bg-[#18181b] px-1.5 py-0.5 rounded-[4px]">
         {(source.score * 100).toFixed(1)}%
       </span>
     )}

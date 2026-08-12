@@ -76,20 +76,20 @@ export default function SourceViewerModal({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-8">
-      <div className="bg-[#09090B] border border-[#27272A] rounded-[12px] w-full max-w-5xl h-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden shadow-black/50">
+      <div className="bg-[var(--background)] border border-[var(--border)] rounded-[12px] w-full max-w-5xl h-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden shadow-black/50">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#27272A] bg-[#111113]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)] bg-[var(--surface)]">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-[8px] bg-[#27272A]/50 flex items-center justify-center">
-              <FileCode2 size={16} className="text-[#A1A1AA]" />
+            <div className="w-8 h-8 rounded-[8px] bg-[var(--border)]/50 flex items-center justify-center">
+              <FileCode2 size={16} className="text-[var(--secondary-text)]" />
             </div>
             <div>
-              <h2 className="text-[14px] font-semibold text-[#FAFAFA]">
+              <h2 className="text-[14px] font-semibold text-[var(--primary-text)]">
                 {fileContent?.filename || "Loading..."}
               </h2>
               {startLine && endLine && (
-                <p className="text-[12px] text-[#A1A1AA]">
+                <p className="text-[12px] text-[var(--secondary-text)]">
                   Lines {startLine} - {endLine}
                 </p>
               )}
@@ -97,17 +97,17 @@ export default function SourceViewerModal({
           </div>
           <button 
             onClick={onClose} 
-            className="w-8 h-8 flex items-center justify-center rounded-[8px] text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#27272A] transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-[8px] text-[var(--secondary-text)] hover:text-[var(--primary-text)] hover:bg-[var(--border)] transition-colors"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto bg-[#09090B] relative p-4" ref={contentRef}>
+        <div className="flex-1 overflow-auto bg-[var(--background)] relative p-4" ref={contentRef}>
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <Loader2 className="animate-spin text-[#52525b]" size={32} />
+              <Loader2 className="animate-spin text-[var(--muted-text)]" size={32} />
             </div>
           )}
           
@@ -115,7 +115,7 @@ export default function SourceViewerModal({
             <div className="absolute inset-0 flex items-center justify-center p-6">
               <div className="text-center max-w-md">
                 <p className="text-red-400 font-medium text-[14px] mb-2">Failed to load source</p>
-                <p className="text-[13px] text-[#A1A1AA]">{error}</p>
+                <p className="text-[13px] text-[var(--secondary-text)]">{error}</p>
               </div>
             </div>
           )}
@@ -137,7 +137,7 @@ export default function SourceViewerModal({
                 const style: React.CSSProperties = { display: "block", padding: "0 4px" };
                 if (startLine && endLine && lineNumber >= startLine && lineNumber <= endLine) {
                   style.backgroundColor = "rgba(255, 255, 255, 0.1)"; // Highlight block
-                  style.borderLeft = "2px solid #FAFAFA";
+                  style.borderLeft = "2px solid var(--primary-text)";
                 }
                 return { style };
               }}

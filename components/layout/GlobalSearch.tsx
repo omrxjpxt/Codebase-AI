@@ -40,18 +40,18 @@ export default function GlobalSearch({ children }: { children: ReactNode }) {
         label="Global Command Menu"
         className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] bg-black/60 backdrop-blur-sm px-4 cmdk-dialog"
       >
-        <div className="w-full max-w-[600px] bg-[#111113] border border-[#27272A] rounded-xl shadow-2xl overflow-hidden flex flex-col cmdk-content">
-          <div className="flex items-center px-4 border-b border-[#27272A]">
-            <Search size={16} className="text-[#A1A1AA] mr-3" />
+        <div className="w-full max-w-[600px] bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl overflow-hidden flex flex-col cmdk-content">
+          <div className="flex items-center px-4 border-b border-[var(--border)]">
+            <Search size={16} className="text-[var(--secondary-text)] mr-3" />
             <Command.Input 
               placeholder="Search repositories, open settings..." 
-              className="flex-1 bg-transparent py-4 outline-none text-[#FAFAFA] placeholder:text-[#52525b] text-[15px]" 
+              className="flex-1 bg-transparent py-4 outline-none text-[var(--primary-text)] placeholder:text-[var(--muted-text)] text-[15px]" 
             />
           </div>
           <Command.List className="max-h-[300px] overflow-y-auto p-2 cmdk-list">
-            <Command.Empty className="py-6 text-center text-[13px] text-[#A1A1AA]">No results found.</Command.Empty>
+            <Command.Empty className="py-6 text-center text-[13px] text-[var(--secondary-text)]">No results found.</Command.Empty>
 
-            <Command.Group heading="Repositories" className="text-[11px] text-[#52525b] font-medium px-2 py-1.5 uppercase tracking-wider">
+            <Command.Group heading="Repositories" className="text-[11px] text-[var(--muted-text)] font-medium px-2 py-1.5 uppercase tracking-wider">
               {repos.map(repo => (
                 <Command.Item 
                   key={repo.id}
@@ -59,30 +59,30 @@ export default function GlobalSearch({ children }: { children: ReactNode }) {
                     setOpen(false);
                     router.push(`/repository/${repo.id}`);
                   }}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[14px] text-[#FAFAFA] aria-selected:bg-[#27272A] aria-selected:text-white transition-colors"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[14px] text-[var(--primary-text)] aria-selected:bg-[var(--border)] aria-selected:text-white transition-colors"
                 >
                   <Folder size={16} className="text-blue-400" />
                   <span className="flex-1 truncate">{repo.name}</span>
-                  <ArrowRight size={14} className="text-[#52525b]" />
+                  <ArrowRight size={14} className="text-[var(--muted-text)]" />
                 </Command.Item>
               ))}
             </Command.Group>
 
-            <Command.Separator className="h-px bg-[#27272A] my-1" />
+            <Command.Separator className="h-px bg-[var(--border)] my-1" />
 
-            <Command.Group heading="Quick Links" className="text-[11px] text-[#52525b] font-medium px-2 py-1.5 uppercase tracking-wider">
+            <Command.Group heading="Quick Links" className="text-[11px] text-[var(--muted-text)] font-medium px-2 py-1.5 uppercase tracking-wider">
               <Command.Item 
                 onSelect={() => { setOpen(false); router.push("/dashboard"); }}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[14px] text-[#FAFAFA] aria-selected:bg-[#27272A] aria-selected:text-white transition-colors"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[14px] text-[var(--primary-text)] aria-selected:bg-[var(--border)] aria-selected:text-white transition-colors"
               >
-                <Folder size={16} className="text-[#A1A1AA]" />
+                <Folder size={16} className="text-[var(--secondary-text)]" />
                 <span>Dashboard</span>
               </Command.Item>
               <Command.Item 
                 onSelect={() => { setOpen(false); router.push("/settings"); }}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[14px] text-[#FAFAFA] aria-selected:bg-[#27272A] aria-selected:text-white transition-colors"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[14px] text-[var(--primary-text)] aria-selected:bg-[var(--border)] aria-selected:text-white transition-colors"
               >
-                <Settings size={16} className="text-[#A1A1AA]" />
+                <Settings size={16} className="text-[var(--secondary-text)]" />
                 <span>Settings</span>
               </Command.Item>
             </Command.Group>
@@ -100,14 +100,14 @@ export default function GlobalSearch({ children }: { children: ReactNode }) {
         }
         [cmdk-group-heading] {
           padding: 8px 12px 4px;
-          color: #52525b;
+          color: var(--muted-text);
           font-size: 11px;
           text-transform: uppercase;
           letter-spacing: 0.05em;
         }
         [cmdk-item][aria-selected="true"] {
-          background: #27272A;
-          color: #FAFAFA;
+          background: var(--border);
+          color: var(--primary-text);
         }
       `}</style>
     </>

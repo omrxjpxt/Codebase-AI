@@ -5,10 +5,10 @@ interface ActivityItemProps {
 }
 
 const dotColors = {
-  indexed: "bg-[#FAFAFA]",
-  refactored: "bg-[#A1A1AA]",
-  summarized: "bg-[#52525b]",
-  asked: "bg-[#A1A1AA]",
+  indexed: "bg-[var(--btn-primary-bg)]",
+  refactored: "bg-[var(--secondary-text)]",
+  summarized: "bg-[var(--muted-text)]",
+  asked: "bg-[var(--secondary-text)]",
 };
 
 export default function ActivityItem({ item }: ActivityItemProps) {
@@ -21,8 +21,8 @@ export default function ActivityItem({ item }: ActivityItemProps) {
 
       {/* Content */}
       <div className="flex-1 min-w-0 pb-4">
-        <p className="text-[13px] text-[#FAFAFA] leading-snug">{item.text}</p>
-        <p className="text-[11px] text-[#52525b] mt-1 tracking-wide">{item.time}</p>
+        <p className="text-[13px] text-[var(--primary-text)] leading-snug">{item.text}</p>
+        <p className="text-[11px] text-[var(--muted-text)] mt-1 tracking-wide">{item.time}</p>
       </div>
     </div>
   );
