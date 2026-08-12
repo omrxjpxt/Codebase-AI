@@ -165,7 +165,7 @@ export default function DashboardPage() {
                   </p>
                   <button
                     onClick={() => setIsUploadModalOpen(true)}
-                    className="px-6 py-3 rounded-[10px] bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] text-[14px] font-semibold hover:bg-white transition-all flex items-center gap-2"
+                    className="px-6 py-3 rounded-[10px] bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] text-[14px] font-semibold hover:opacity-90 transition-all flex items-center gap-2"
                   >
                     <Upload size={16} />
                     Upload Repository
