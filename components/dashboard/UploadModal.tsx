@@ -108,7 +108,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess }: UploadModalP
             <h2 className="text-[18px] font-semibold text-[var(--primary-text)]">Add Repository</h2>
             <button 
               onClick={onClose} 
-              className="text-[var(--secondary-text)] hover:text-[var(--primary-text)] transition-colors"
+              className="text-[var(--secondary-text)] hover:text-[var(--primary-text)] transition-colors p-1 hover:bg-[var(--surface-hover)] rounded-md"
               disabled={isUploading}
             >
               <X size={18} />
@@ -118,14 +118,14 @@ export default function UploadModal({ isOpen, onClose, onSuccess }: UploadModalP
           <div className="flex p-1 bg-[var(--background)] border border-[var(--border)] rounded-lg">
             <button 
               onClick={() => { setTab("zip"); setError(""); }}
-              className={`flex-1 py-1.5 text-[13px] font-medium rounded-md transition-colors ${tab === "zip" ? "bg-[var(--border)] text-white" : "text-[var(--secondary-text)] hover:text-white"}`}
+              className={`flex-1 py-1.5 text-[13px] font-medium rounded-md transition-colors ${tab === "zip" ? "bg-[var(--surface-hover)] text-[var(--primary-text)] shadow-sm" : "text-[var(--secondary-text)] hover:text-[var(--primary-text)]"}`}
               disabled={isUploading}
             >
               Upload ZIP
             </button>
             <button 
               onClick={() => { setTab("github"); setError(""); }}
-              className={`flex-1 py-1.5 text-[13px] font-medium rounded-md transition-colors ${tab === "github" ? "bg-[var(--border)] text-white" : "text-[var(--secondary-text)] hover:text-white"}`}
+              className={`flex-1 py-1.5 text-[13px] font-medium rounded-md transition-colors ${tab === "github" ? "bg-[var(--surface-hover)] text-[var(--primary-text)] shadow-sm" : "text-[var(--secondary-text)] hover:text-[var(--primary-text)]"}`}
               disabled={isUploading}
             >
               GitHub Import
@@ -142,7 +142,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess }: UploadModalP
 
           {tab === "zip" && (
             <div>
-              <div className="border-2 border-dashed border-[var(--border)] rounded-[10px] p-8 flex flex-col items-center justify-center text-center hover:border-[var(--border-hover)] transition-colors bg-[var(--background)]">
+              <div className="border-2 border-dashed border-[var(--border-hover)] rounded-[10px] p-8 flex flex-col items-center justify-center text-center hover:border-[var(--secondary-text)] transition-colors bg-[var(--surface)] hover:bg-[var(--surface-hover)]">
                 <UploadCloud size={32} className="text-[var(--secondary-text)] mb-3" />
                 <p className="text-[14px] font-medium text-[var(--primary-text)] mb-1">
                   Click to upload or drag and drop
@@ -151,7 +151,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess }: UploadModalP
                   ZIP archive containing your codebase
                 </p>
                 <label className="cursor-pointer">
-                  <span className="px-4 py-2 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] text-[13px] font-semibold rounded-[8px] hover:bg-white transition-colors">
+                  <span className="px-4 py-2 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] text-[13px] font-semibold rounded-[8px] hover:opacity-90 transition-opacity">
                     Select ZIP File
                   </span>
                   <input 
@@ -188,7 +188,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess }: UploadModalP
                   value={githubUrl}
                   onChange={(e) => setGithubUrl(e.target.value)}
                   disabled={isUploading}
-                  className="w-full pl-9 pr-4 py-2 bg-[var(--background)] border border-[var(--border)] rounded-[8px] text-[14px] text-white focus:outline-none focus:border-[var(--input-focus-border)] transition-colors"
+                  className="w-full pl-9 pr-4 py-2 bg-[var(--background)] border border-[var(--border)] rounded-[8px] text-[14px] text-[var(--primary-text)] placeholder:text-[var(--placeholder-text)] focus:outline-none focus:border-[var(--input-focus-border)] transition-colors"
                 />
               </div>
               <p className="mt-2 text-[12px] text-[var(--muted-text)]">
@@ -208,7 +208,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess }: UploadModalP
             <button 
               onClick={handleSubmit}
               disabled={isUploading || (tab === "zip" ? !file : !githubUrl.trim())}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] text-[13px] font-semibold rounded-[8px] hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-[100px]"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] text-[13px] font-semibold rounded-[8px] hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed min-w-[100px]"
             >
               {isUploading ? (
                 <>
