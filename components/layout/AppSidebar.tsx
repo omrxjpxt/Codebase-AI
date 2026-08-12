@@ -36,7 +36,9 @@ export default function AppSidebar() {
       {/* Nav items */}
       <div className="flex flex-col gap-1 flex-1">
         {navItems.map(({ icon: Icon, href, label }) => {
-          const isActive = pathname === href || pathname.startsWith(href + "/");
+          const isActive = href === "/dashboard" 
+            ? pathname === "/dashboard"
+            : pathname === href || pathname.startsWith(href + "/");
           return (
             <Link
               key={href}
