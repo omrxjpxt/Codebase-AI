@@ -82,7 +82,7 @@ async def generate_embeddings_for_repo(repo_id: uuid.UUID):
         if not repo:
             return
             
-        repo.status = "embedding"
+        repo.status = "indexing"
         await db.commit()
         
         try:
@@ -136,7 +136,7 @@ async def process_and_store_repository(
     zip_filepath: str
 ) -> Repository:
     # 1. Create repository entry
-    repo = Repository(user_id=user_id, name=repo_name, status="processing")
+    repo = Repository(user_id=user_id, name=repo_name, status="pending")
     db.add(repo)
     await db.commit()
     await db.refresh(repo)

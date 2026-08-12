@@ -49,8 +49,11 @@ async def upload_repository(
             shutil.copyfileobj(file.file, f)
             
         # Process and store
-        repo = await process_and_store_repository(db, current_user.id, repo_name, temp_path)
-        return repo
+        try:
+            repo = await process_and_store_repository(db, current_user.id, repo_name, temp_path)
+            return repo
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
     finally:
         if settings.DELETE_UPLOADED_ZIP_AFTER_INDEXING and os.path.exists(temp_path):
             os.remove(temp_path)
@@ -75,10 +78,13 @@ async def import_github_repository(
     
     try:
         # Process and store
-        repo = await process_and_store_repository(db, current_user.id, repo_name, temp_path)
-        repo.github_url = request.github_url
-        await db.commit()
-        return repo
+        try:
+            repo = await process_and_store_repository(db, current_user.id, repo_name, temp_path)
+            repo.github_url = request.github_url
+            await db.commit()
+            return repo
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
     finally:
         if settings.DELETE_UPLOADED_ZIP_AFTER_INDEXING and os.path.exists(temp_path):
             os.remove(temp_path)
@@ -212,7 +218,7 @@ async def reindex_repository(
         chunk.embedding_model = None
         chunk.embedding_created_at = None
         
-    repo.status = "embedding"
+    repo.status = "indexing"
     repo.error_message = None
     await db.commit()
     

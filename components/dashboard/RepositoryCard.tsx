@@ -9,8 +9,8 @@ interface RepositoryCardProps {
 
 const statusConfig: Record<string, { label: string; color: string; dot: string }> = {
   indexed: { label: "Indexed", color: "text-emerald-400", dot: "bg-emerald-400" },
-  embedding: { label: "Embedding", color: "text-blue-400", dot: "bg-blue-400" },
-  processing: { label: "Processing", color: "text-amber-400", dot: "bg-amber-400" },
+  indexing: { label: "Indexing", color: "text-blue-400", dot: "bg-blue-400" },
+  pending: { label: "Pending", color: "text-amber-400", dot: "bg-amber-400" },
   failed: { label: "Failed", color: "text-red-400", dot: "bg-red-400" },
 };
 
@@ -44,9 +44,17 @@ export default function RepositoryCard({ repo }: RepositoryCardProps) {
               </>
             )}
             <span className="text-[var(--placeholder-text)]">•</span>
-            <span className={cn("text-[12px] flex items-center gap-1", status.color)}>
+            <span 
+              className={cn("text-[12px] flex items-center gap-1", status.color)} 
+              title={repo.status === "failed" && repo.error_message ? repo.error_message : undefined}
+            >
               <span className={cn("w-1.5 h-1.5 rounded-full inline-block", status.dot)} />
               {status.label}
+              {repo.status === "failed" && repo.error_message && (
+                <span className="ml-1 text-[11px] truncate max-w-[200px] opacity-80" title={repo.error_message}>
+                  - {repo.error_message}
+                </span>
+              )}
             </span>
           </div>
         </div>
