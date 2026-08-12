@@ -23,11 +23,22 @@ export default function SearchModal() {
         setIsOpen((prev) => !prev);
       }
       if (isOpen && e.key === "Escape") {
+        e.preventDefault();
         setIsOpen(false);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+    };
   }, [isOpen]);
 
   // Focus input on open

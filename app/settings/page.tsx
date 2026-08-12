@@ -7,11 +7,15 @@ import { User, LogOut, Trash2, ShieldAlert, Monitor, Moon, Sun, Database } from 
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { toast } from "sonner";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
 
 export default function SettingsPage() {
   const router = useRouter();
   const [user, setUser] = useState<{ email: string; id: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [dialogState, setDialogState] = useState<{
+    type: "clear-history" | "delete-account" | null;
+  }>({ type: null });
   const { theme, setTheme } = useTheme();
   
   useEffect(() => {
@@ -25,24 +29,21 @@ export default function SettingsPage() {
   }, [router]);
 
   const handleClearHistory = async () => {
-    if (!confirm("Are you sure you want to delete all chat history across all repositories?")) return;
-    
     try {
       await fetchApi("/repositories/chat-sessions/all", { method: "DELETE" });
       toast.success("Chat history cleared successfully.");
+      setDialogState({ type: null });
     } catch (e: any) {
       toast.error(e.message || "Failed to clear history.");
     }
   };
 
   const handleDeleteAccount = async () => {
-    if (!confirm("Are you absolutely sure you want to delete your account? This will permanently delete all your repositories, files, embeddings, and chat history. This action cannot be undone.")) return;
-    
     try {
       await fetchApi("/auth/me", { method: "DELETE" });
       localStorage.removeItem("token");
       toast.success("Account deleted successfully.");
-      router.push("/");
+      router.push("/login"); // Fixed from "/"
     } catch (e: any) {
       toast.error(e.message || "Failed to delete account.");
     }
@@ -170,7 +171,7 @@ export default function SettingsPage() {
                   <p className="text-[13px] text-[#A1A1AA] mt-1">Permanently delete all chat sessions across all repositories.</p>
                 </div>
                 <button 
-                  onClick={handleClearHistory} 
+                  onClick={() => setDialogState({ type: "clear-history" })} 
                   className="px-4 py-2 border border-[#27272A] hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-500 text-[#FAFAFA] text-[13px] font-medium rounded-lg transition-colors flex items-center gap-2"
                 >
                   <Trash2 size={14} />
@@ -184,7 +185,7 @@ export default function SettingsPage() {
                   <p className="text-[13px] text-[#A1A1AA] mt-1">Permanently delete your account and all associated data.</p>
                 </div>
                 <button 
-                  onClick={handleDeleteAccount} 
+                  onClick={() => setDialogState({ type: "delete-account" })} 
                   className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[13px] font-medium rounded-lg transition-colors flex items-center gap-2"
                 >
                   <Trash2 size={14} />
@@ -201,6 +202,30 @@ export default function SettingsPage() {
 
         </div>
       </main>
+
+      {/* Dialogs */}
+      <ConfirmDialog
+        isOpen={dialogState.type === "clear-history"}
+        onClose={() => setDialogState({ type: null })}
+        onConfirm={handleClearHistory}
+        title="Clear chat history?"
+        description="This will permanently delete all chat sessions across all repositories. This action cannot be undone."
+        confirmText="Clear History"
+        icon="trash"
+        isDestructive={true}
+      />
+
+      <ConfirmDialog
+        isOpen={dialogState.type === "delete-account"}
+        onClose={() => setDialogState({ type: null })}
+        onConfirm={handleDeleteAccount}
+        title="Delete your account?"
+        description="This will permanently delete your account and all associated repositories, files, embeddings, and chat history. This action cannot be undone."
+        confirmText="Delete Account"
+        icon="warning"
+        isDestructive={true}
+        requireInputMatch="DELETE"
+      />
     </div>
   );
 }

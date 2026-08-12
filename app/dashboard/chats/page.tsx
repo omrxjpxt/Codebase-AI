@@ -7,6 +7,7 @@ import { fetchApi, ChatSessionWithRepo, getAllChatSessions, deleteChatSession } 
 import { MessageSquare, Folder, Trash2, ArrowRight, Loader2, Search, Edit2 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
 
 export default function ChatsPage() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function ChatsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
 
   const loadData = async () => {
     try {
@@ -31,14 +33,19 @@ export default function ChatsPage() {
     loadData();
   }, []);
 
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
+  const handleDeleteClick = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!confirm("Are you sure you want to delete this chat session?")) return;
+    setSessionToDelete(id);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!sessionToDelete) return;
     try {
-      await deleteChatSession(id);
+      await deleteChatSession(sessionToDelete);
       toast.success("Chat deleted.");
-      setSessions(prev => prev.filter(s => s.id !== id));
+      setSessions(prev => prev.filter(s => s.id !== sessionToDelete));
+      setSessionToDelete(null);
     } catch (e: any) {
       toast.error(e.message || "Failed to delete chat.");
     }
@@ -160,7 +167,7 @@ export default function ChatsPage() {
                         </button>
                       )}
                       <button
-                        onClick={(e) => handleDelete(e, session.id)}
+                        onClick={(e) => handleDeleteClick(e, session.id)}
                         className="w-8 h-8 flex items-center justify-center rounded-lg text-[#52525b] hover:text-red-400 hover:bg-red-400/10 transition-colors"
                         title="Delete Chat"
                       >
@@ -177,6 +184,17 @@ export default function ChatsPage() {
           </div>
         </main>
       </div>
+
+      <ConfirmDialog
+        isOpen={sessionToDelete !== null}
+        onClose={() => setSessionToDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete chat session?"
+        description="Are you sure you want to delete this chat session? This action cannot be undone."
+        confirmText="Delete Chat"
+        icon="trash"
+        isDestructive={true}
+      />
     </div>
   );
 }

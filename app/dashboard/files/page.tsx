@@ -7,6 +7,7 @@ import SourceViewerModal from "@/components/repository/SourceViewerModal";
 import { fetchApi, Repository } from "@/lib/api";
 import { FolderOpen, Folder, Trash2, Loader2, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
 
 export default function FilesPage() {
   const [repositories, setRepositories] = useState<Repository[]>([]);
@@ -16,6 +17,7 @@ export default function FilesPage() {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [viewerSource, setViewerSource] = useState<any>(null);
   const [showRepoDropdown, setShowRepoDropdown] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     const loadRepos = async () => {
@@ -47,10 +49,13 @@ export default function FilesPage() {
     setShowRepoDropdown(false);
   };
 
-  const handleDeleteRepo = async () => {
+  const handleDeleteRepoClick = () => {
     if (!selectedRepoId) return;
-    if (!confirm("Are you sure you want to permanently delete this repository and all its files, embeddings, and chat history?")) return;
-    
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedRepoId) return;
     try {
       await fetchApi(`/repositories/${selectedRepoId}`, { method: "DELETE" });
       toast.success("Repository deleted.");
@@ -58,6 +63,7 @@ export default function FilesPage() {
       localStorage.removeItem("last_selected_repo_files");
       const remaining = repositories.filter(r => r.id !== selectedRepoId);
       setSelectedRepoId(remaining.length > 0 ? remaining[0].id : null);
+      setShowDeleteConfirm(false);
     } catch (e: any) {
       toast.error(e.message || "Failed to delete repository.");
     }
@@ -79,7 +85,7 @@ export default function FilesPage() {
             {selectedRepo && (
               <>
                 <button
-                  onClick={handleDeleteRepo}
+                  onClick={handleDeleteRepoClick}
                   className="px-3 py-1.5 rounded-[8px] bg-red-500/10 text-red-400 text-[12px] font-medium hover:bg-red-500/20 transition-all flex items-center gap-1.5"
                 >
                   <Trash2 size={14} />
@@ -149,6 +155,17 @@ export default function FilesPage() {
         onClose={() => setIsViewerOpen(false)}
         repositoryId={selectedRepoId || ""}
         fileId={viewerSource?.file_id}
+      />
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete repository?"
+        description="Are you sure you want to permanently delete this repository and all its files, embeddings, and chat history? This action cannot be undone."
+        confirmText="Delete Repository"
+        icon="trash"
+        isDestructive={true}
       />
     </div>
   );

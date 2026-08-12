@@ -17,10 +17,10 @@ import {
   getChatSessions,
   createChatSession,
   getChatSessionDetail,
-  updateChatSession,
   deleteChatSession,
   API_BASE_URL
 } from "@/lib/api";
+import { toast } from "sonner";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -301,7 +301,7 @@ export default function RepositoryPage({ params }: PageProps) {
       setRepo(prev => prev ? { ...prev, ...updatedRepo } : prev);
       setError("");
     } catch (err: any) {
-      alert(`Failed to re-index: ${err.message}`);
+      toast.error(`Failed to re-index: ${err.message}`);
     }
   };
 
