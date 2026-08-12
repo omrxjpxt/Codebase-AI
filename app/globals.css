@@ -4,13 +4,41 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== Light theme (default) ===== */
 :root {
+  --background: #FFFFFF;
+  --surface: #F4F4F5;
+  --border: #E4E4E7;
+  --primary-text: #09090B;
+  --secondary-text: #71717A;
+  --muted-text: #A1A1AA;
+  --code-bg: #F4F4F5;
+  --code-border: #E4E4E7;
+  --code-text: #3F3F46;
+  --scrollbar-track: #FFFFFF;
+  --scrollbar-thumb: #D4D4D8;
+  --scrollbar-thumb-hover: #A1A1AA;
+  --selection-bg: rgba(9, 9, 11, 0.12);
+  --focus-ring: rgba(9, 9, 11, 0.4);
+  --radius: 12px;
+}
+
+/* ===== Dark theme ===== */
+.dark {
   --background: #09090B;
   --surface: #111113;
   --border: #27272A;
   --primary-text: #FAFAFA;
   --secondary-text: #A1A1AA;
-  --radius: 12px;
+  --muted-text: #52525b;
+  --code-bg: #1a1a1d;
+  --code-border: #27272A;
+  --code-text: #e4e4e7;
+  --scrollbar-track: #09090B;
+  --scrollbar-thumb: #27272A;
+  --scrollbar-thumb-hover: #3f3f46;
+  --selection-bg: rgba(250, 250, 250, 0.15);
+  --focus-ring: rgba(250, 250, 250, 0.5);
 }
 
 * {
@@ -23,11 +51,12 @@ html,
 body {
   max-width: 100vw;
   overflow-x: hidden;
-  background-color: #09090B;
-  color: #FAFAFA;
+  background-color: var(--background);
+  color: var(--primary-text);
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 a {
@@ -41,24 +70,24 @@ a {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #09090B;
+  background: var(--scrollbar-track);
 }
 ::-webkit-scrollbar-thumb {
-  background: #27272A;
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* Selection */
 ::selection {
-  background: rgba(250,250,250,0.15);
+  background: var(--selection-bg);
 }
 
 /* Focus ring */
 *:focus-visible {
-  outline: 2px solid rgba(250,250,250,0.5);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -88,11 +117,11 @@ a {
 
 /* Code inline style */
 code {
-  background: #1a1a1d;
-  border: 1px solid #27272A;
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
   border-radius: 4px;
   padding: 1px 6px;
   font-size: 0.85em;
   font-family: 'Geist Mono', 'Fira Code', monospace;
-  color: #e4e4e7;
+  color: var(--code-text);
 }

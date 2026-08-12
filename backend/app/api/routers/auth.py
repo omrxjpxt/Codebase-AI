@@ -60,6 +60,17 @@ async def delete_user_me(current_user: User = Depends(get_current_user), db: Asy
     await db.delete(current_user)
     await db.commit()
 
+@router.post("/logout")
+async def logout(response: Response):
+    response.delete_cookie(
+        key="access_token",
+        httponly=True,
+        secure=settings.ENVIRONMENT != "development",
+        samesite="lax",
+        path="/"
+    )
+    return {"message": "Logged out successfully"}
+
 @router.get("/github/login")
 async def github_login(response: Response):
     if not settings.GITHUB_CLIENT_ID:

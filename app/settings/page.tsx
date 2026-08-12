@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { fetchApi } from "@/lib/api";
+import { fetchApi, API_BASE_URL } from "@/lib/api";
 import { User, LogOut, Trash2, ShieldAlert, Monitor, Moon, Sun, Database } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
@@ -14,7 +14,7 @@ export default function SettingsPage() {
   const [user, setUser] = useState<{ email: string; id: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogState, setDialogState] = useState<{
-    type: "clear-history" | "delete-account" | null;
+    type: "clear-history" | "delete-account" | "logout" | null;
   }>({ type: null });
   const { theme, setTheme } = useTheme();
   
@@ -41,17 +41,32 @@ export default function SettingsPage() {
   const handleDeleteAccount = async () => {
     try {
       await fetchApi("/auth/me", { method: "DELETE" });
+      // Also clear the HttpOnly cookie
+      await fetch(`${API_BASE_URL}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      }).catch(() => {});
       localStorage.removeItem("token");
       toast.success("Account deleted successfully.");
-      router.push("/login"); // Fixed from "/"
+      window.location.href = "/login";
     } catch (e: any) {
       toast.error(e.message || "Failed to delete account.");
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      // Call backend to clear HttpOnly cookie
+      await fetch(`${API_BASE_URL}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch {
+      // Even if the request fails, still clear client-side state
+    }
     localStorage.removeItem("token");
-    router.push("/login");
+    // Use replace to prevent back-button returning to authenticated pages
+    window.location.href = "/login";
   };
 
   if (isLoading) {
@@ -96,7 +111,7 @@ export default function SettingsPage() {
                   <p className="text-[14px] font-medium text-[#FAFAFA]">Log out</p>
                   <p className="text-[13px] text-[#A1A1AA] mt-1">Sign out of your account on this device.</p>
                 </div>
-                <button onClick={handleLogout} className="px-4 py-2 bg-[#27272A] hover:bg-[#3f3f46] text-[#FAFAFA] text-[13px] font-medium rounded-lg transition-colors flex items-center gap-2">
+                <button onClick={() => setDialogState({ type: "logout" })} className="px-4 py-2 bg-[#27272A] hover:bg-[#3f3f46] text-[#FAFAFA] text-[13px] font-medium rounded-lg transition-colors flex items-center gap-2">
                   <LogOut size={14} />
                   Log out
                 </button>
@@ -225,6 +240,17 @@ export default function SettingsPage() {
         icon="warning"
         isDestructive={true}
         requireInputMatch="DELETE"
+      />
+
+      <ConfirmDialog
+        isOpen={dialogState.type === "logout"}
+        onClose={() => setDialogState({ type: null })}
+        onConfirm={handleLogout}
+        title="Log out?"
+        description="You will be signed out of your account on this device."
+        confirmText="Log out"
+        icon="warning"
+        isDestructive={false}
       />
     </div>
   );

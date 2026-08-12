@@ -10,12 +10,13 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: "#09090B",
-        surface: "#111113",
-        border: "#27272A",
-        "primary-text": "#FAFAFA",
-        "secondary-text": "#A1A1AA",
-        accent: "#FAFAFA",
+        background: "var(--background)",
+        surface: "var(--surface)",
+        border: "var(--border)",
+        "primary-text": "var(--primary-text)",
+        "secondary-text": "var(--secondary-text)",
+        "muted-text": "var(--muted-text)",
+        accent: "var(--primary-text)",
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
