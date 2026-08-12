@@ -74,7 +74,7 @@ export default function RepoSidebar({
                 "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-[8px] text-[13px] transition-all text-left",
                 isActive
                   ? "bg-[var(--sidebar-active)] text-[var(--sidebar-icon-active)] font-medium"
-                  : "text-[var(--sidebar-icon)] hover:text-[var(--sidebar-icon-active)] hover:bg-[var(--sidebar-hover)]"
+                  : "text-[var(--sidebar-icon)] hover:text-[var(--sidebar-icon-hover)] hover:bg-[var(--sidebar-hover)]"
               )}
             >
               <Icon size={15} className={isActive ? "text-[var(--sidebar-icon-active)]" : "text-[var(--sidebar-icon)]"} />
@@ -108,7 +108,7 @@ export default function RepoSidebar({
                   "group flex items-center justify-between px-2.5 py-1.5 rounded-[6px] text-[12px] cursor-pointer transition-colors",
                   activeSessionId === session.id 
                     ? "bg-[var(--sidebar-active)] text-[var(--sidebar-icon-active)] border border-[var(--sidebar-border)]" 
-                    : "text-[var(--sidebar-icon)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-icon-active)] border border-transparent"
+                    : "text-[var(--sidebar-icon)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-icon-hover)] border border-transparent"
                 )}
                 onClick={() => onSelectSession(session.id)}
               >

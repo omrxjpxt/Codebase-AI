@@ -43,9 +43,10 @@
   --sidebar-bg: #F9FAFB;
   --sidebar-border: #E5E7EB;
   --sidebar-hover: #F3F4F6;
-  --sidebar-active: #E5E7EB;
+  --sidebar-active: #111827;
   --sidebar-icon: #6B7280;
-  --sidebar-icon-active: #111827;
+  --sidebar-icon-hover: #111827;
+  --sidebar-icon-active: #FFFFFF;
   --sidebar-logo-bg: #111827;
   --sidebar-logo-fill: #FFFFFF;
   --sidebar-avatar-bg: #E5E7EB;
@@ -99,6 +100,7 @@
   --sidebar-hover: #1a1a1d;
   --sidebar-active: #1a1a1d;
   --sidebar-icon: #A1A1AA;
+  --sidebar-icon-hover: #FAFAFA;
   --sidebar-icon-active: #FAFAFA;
   --sidebar-logo-bg: #1a1a1d;
   --sidebar-logo-fill: #FAFAFA;

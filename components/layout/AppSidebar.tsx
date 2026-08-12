@@ -48,7 +48,7 @@ export default function AppSidebar() {
                 "w-9 h-9 rounded-[8px] flex items-center justify-center transition-all",
                 isActive
                   ? "bg-[var(--sidebar-active)] text-[var(--sidebar-icon-active)]"
-                  : "text-[var(--sidebar-icon)] hover:text-[var(--sidebar-icon-active)] hover:bg-[var(--sidebar-hover)]"
+                  : "text-[var(--sidebar-icon)] hover:text-[var(--sidebar-icon-hover)] hover:bg-[var(--sidebar-hover)]"
               )}
             >
               <Icon size={18} />
@@ -66,7 +66,7 @@ export default function AppSidebar() {
             "w-9 h-9 rounded-[8px] flex items-center justify-center transition-all",
             pathname === "/settings"
               ? "bg-[var(--sidebar-active)] text-[var(--sidebar-icon-active)]"
-              : "text-[var(--sidebar-icon)] hover:text-[var(--sidebar-icon-active)] hover:bg-[var(--sidebar-hover)]"
+              : "text-[var(--sidebar-icon)] hover:text-[var(--sidebar-icon-hover)] hover:bg-[var(--sidebar-hover)]"
           )}
         >
           <Settings size={18} />
