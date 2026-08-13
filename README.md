@@ -1,4 +1,4 @@
-# CodeBase AI
+# CodeBase AI (In Progress)
 
 Understand Any Codebase in Minutes. CodeBase AI is a powerful tool designed to ingest a ZIP of a repository or directly from GitHub and allow you to intuitively chat, search, and understand the architecture, database schema, and logic of a project using AI (Gemini).
 
