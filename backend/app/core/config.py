@@ -1,5 +1,8 @@
+import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 class Settings(BaseSettings):
     DATABASE_URL: str
@@ -20,11 +23,16 @@ class Settings(BaseSettings):
     LLM_PROVIDER: str = "gemini"
     CHAT_MODEL: str = "gemini-2.5-flash"
     EMBEDDING_MODEL: str = "text-embedding-004"
+    EMBEDDING_DIMENSIONS: int = 768
     GEMINI_API_KEY: Optional[str] = None
     
     LOG_LEVEL: str = "INFO"
     ENVIRONMENT: str = "development"
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(
+        env_file=(os.path.join(BASE_DIR, ".env"), ".env"),
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
 
 settings = Settings()

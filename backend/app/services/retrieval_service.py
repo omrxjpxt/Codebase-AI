@@ -3,8 +3,7 @@ import time
 import logging
 from typing import List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from google import genai
+from sqlalchemy import select, func
 from collections import defaultdict
 
 from app.core.config import settings
@@ -26,6 +25,16 @@ async def retrieve_relevant_chunks(
 ) -> List[Dict[str, Any]]:
     start_time = time.time()
     
+    # Check if the repository has any embedded chunks
+    count_stmt = select(func.count()).select_from(Chunk).where(
+        Chunk.repository_id == repository_id,
+        Chunk.embedding.is_not(None)
+    )
+    embedded_count = (await db.execute(count_stmt)).scalar() or 0
+    if embedded_count == 0:
+        logger.info(f"Repository {repository_id} has 0 embedded chunks. Returning empty sources.")
+        return []
+
     query_embedding = await generate_query_embedding(question)
     
     # Fetch more candidates to allow for diversity and deduplication

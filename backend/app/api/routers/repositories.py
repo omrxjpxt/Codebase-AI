@@ -210,6 +210,12 @@ async def reindex_repository(
     db: AsyncSession = Depends(get_db)
 ):
     repo = await get_repository_model_or_404(id, current_user.id, db)
+    
+    if repo.status == "indexing":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Repository is currently being indexed. Please wait until indexing completes."
+        )
         
     update_stmt = select(Chunk).where(Chunk.repository_id == id)
     chunks_result = await db.execute(update_stmt)
@@ -254,11 +260,21 @@ async def ask_repository_question(
 ):
     # Verify ownership
     repo = await get_repository_model_or_404(id, current_user.id, db)
+    
+    if repo.status in ("pending", "indexing"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Repository is currently indexing. Please wait until indexing completes."
+        )
+    if repo.status == "failed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Repository indexing failed: {repo.error_message or 'Unknown error'}. Please re-index."
+        )
         
     sources_data = await retrieve_relevant_chunks(db, id, request.question, top_k=8)
     
     file_paths = list(set([source['path'] for source in sources_data]))
-    
     chunks_text = "\n\n".join([f"--- File: {s['path']} ---\n{s['content']}" for s in sources_data])
     
     prompt = f"""You are a senior software engineer helping a developer understand a codebase.
@@ -267,10 +283,10 @@ Repository:
 {repo.name}
 
 Relevant Files:
-{', '.join(file_paths)}
+{', '.join(file_paths) if file_paths else 'No matching code files found.'}
 
 Relevant Code Context:
-{chunks_text}
+{chunks_text if chunks_text else 'No code context retrieved from this repository. Answer using general software engineering knowledge while indicating that no relevant code chunks were found.'}
 
 User Question:
 {request.question}
@@ -290,7 +306,6 @@ Provide:
         )
         return AskResponse(answer=response_text, sources=sources_data)
     except Exception as e:
-        # Assuming gemini_service raises HTTPException, if not it will be caught here
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(status_code=500, detail=str(e))

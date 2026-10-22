@@ -165,6 +165,19 @@ async def ask_chat_session(
         
     repo_stmt = select(Repository).where(Repository.id == session.repository_id)
     repo = (await db.execute(repo_stmt)).scalar_one_or_none()
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found")
+        
+    if repo.status in ("pending", "indexing"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Repository is currently indexing. Please wait until indexing completes before asking questions."
+        )
+    if repo.status == "failed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Repository indexing failed: {repo.error_message or 'Unknown error'}. Please re-index the repository."
+        )
     
     # Save user message
     user_msg = Message(chat_session_id=session.id, role="user", content=request.question)
@@ -182,10 +195,10 @@ Repository:
 {repo.name}
 
 Relevant Files:
-{', '.join(file_paths)}
+{', '.join(file_paths) if file_paths else 'No matching code files found.'}
 
 Relevant Code Context:
-{chunks_text}
+{chunks_text if chunks_text else 'No code context retrieved. Answer using general software engineering knowledge while indicating that no relevant code chunks were found.'}
 
 User Question:
 {request.question}
