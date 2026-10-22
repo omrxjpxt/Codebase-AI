@@ -98,17 +98,25 @@ async def list_repositories(
     result = await db.execute(stmt)
     return result.scalars().all()
 
+async def get_repository_model_or_404(
+    id: uuid.UUID,
+    user_id: uuid.UUID,
+    db: AsyncSession
+) -> Repository:
+    stmt = select(Repository).where(Repository.id == id, Repository.user_id == user_id)
+    result = await db.execute(stmt)
+    repo = result.scalar_one_or_none()
+    if not repo:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Repository not found")
+    return repo
+
 @router.get("/{id}", response_model=RepositoryDetailResponse)
 async def get_repository(
     id: uuid.UUID,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    stmt = select(Repository).where(Repository.id == id, Repository.user_id == current_user.id)
-    result = await db.execute(stmt)
-    repo = result.scalar_one_or_none()
-    if not repo:
-        raise HTTPException(status_code=404, detail="Repository not found")
+    repo = await get_repository_model_or_404(id, current_user.id, db)
     
     # Get file count
     file_count_stmt = select(func.count()).select_from(DBFile).where(DBFile.repository_id == id)
@@ -130,6 +138,7 @@ async def get_repository(
         "user_id": repo.user_id,
         "status": repo.status,
         "error_message": repo.error_message,
+        "summary": repo.summary,
         "upload_date": repo.upload_date,
         "file_count": file_count,
         "chunk_count": chunk_count,
@@ -143,7 +152,7 @@ async def get_repository_files(
     db: AsyncSession = Depends(get_db)
 ):
     # Verify ownership
-    repo = await get_repository(id, current_user, db)
+    repo = await get_repository_model_or_404(id, current_user.id, db)
     
     stmt = select(DBFile).where(DBFile.repository_id == repo.id)
     result = await db.execute(stmt)
@@ -156,14 +165,14 @@ async def get_file_content(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    # Verify repo
-    repo = await get_repository(id, current_user, db)
+    # Verify repo ownership
+    repo = await get_repository_model_or_404(id, current_user.id, db)
     
-    stmt = select(DBFile).where(DBFile.id == file_id, DBFile.repository_id == id)
+    stmt = select(DBFile).where(DBFile.id == file_id, DBFile.repository_id == repo.id)
     file_obj = (await db.execute(stmt)).scalar_one_or_none()
     
     if not file_obj:
-        raise HTTPException(status_code=404, detail="File not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
         
     return {
         "filename": file_obj.path.split("/")[-1],
@@ -178,7 +187,7 @@ async def get_repository_chunks(
     db: AsyncSession = Depends(get_db)
 ):
     # Verify ownership
-    repo = await get_repository(id, current_user, db)
+    repo = await get_repository_model_or_404(id, current_user.id, db)
     
     stmt = select(Chunk).where(Chunk.repository_id == repo.id)
     result = await db.execute(stmt)
@@ -190,14 +199,9 @@ async def delete_repository(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    repo = await get_repository(id, current_user, db)
-    
-    stmt = select(Repository).where(Repository.id == id, Repository.user_id == current_user.id)
-    result = await db.execute(stmt)
-    repo_obj = result.scalar_one_or_none()
-    if repo_obj:
-        await db.delete(repo_obj)
-        await db.commit()
+    repo = await get_repository_model_or_404(id, current_user.id, db)
+    await db.delete(repo)
+    await db.commit()
 
 @router.post("/{id}/reindex", response_model=RepositoryResponse)
 async def reindex_repository(
@@ -205,11 +209,7 @@ async def reindex_repository(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    stmt = select(Repository).where(Repository.id == id, Repository.user_id == current_user.id)
-    result = await db.execute(stmt)
-    repo = result.scalar_one_or_none()
-    if not repo:
-        raise HTTPException(status_code=404, detail="Repository not found")
+    repo = await get_repository_model_or_404(id, current_user.id, db)
         
     update_stmt = select(Chunk).where(Chunk.repository_id == id)
     chunks_result = await db.execute(update_stmt)
@@ -234,11 +234,7 @@ async def generate_repository_summary_endpoint(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    stmt = select(Repository).where(Repository.id == id, Repository.user_id == current_user.id)
-    result = await db.execute(stmt)
-    repo = result.scalar_one_or_none()
-    if not repo:
-        raise HTTPException(status_code=404, detail="Repository not found")
+    repo = await get_repository_model_or_404(id, current_user.id, db)
         
     if not settings.GEMINI_API_KEY:
         raise HTTPException(status_code=400, detail="GEMINI_API_KEY is not configured")
@@ -257,11 +253,7 @@ async def ask_repository_question(
     db: AsyncSession = Depends(get_db)
 ):
     # Verify ownership
-    stmt = select(Repository).where(Repository.id == id, Repository.user_id == current_user.id)
-    result = await db.execute(stmt)
-    repo = result.scalar_one_or_none()
-    if not repo:
-        raise HTTPException(status_code=404, detail="Repository not found")
+    repo = await get_repository_model_or_404(id, current_user.id, db)
         
     sources_data = await retrieve_relevant_chunks(db, id, request.question, top_k=8)
     

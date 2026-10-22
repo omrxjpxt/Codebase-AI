@@ -19,8 +19,9 @@ export interface Repository {
   id: string;
   user_id: string;
   name: string;
-  status: string; // "processing", "embedding", "indexed", "failed"
+  status: string; // "pending", "indexing", "indexed", "failed"
   error_message?: string;
+  summary?: string | null;
   upload_date: string;
   github_url: string | null;
   file_count?: number; // Might need to compute this based on backend response

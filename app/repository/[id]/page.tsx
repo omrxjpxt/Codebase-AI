@@ -16,6 +16,7 @@ import {
   ChatSession,
   getChatSessions,
   createChatSession,
+  updateChatSession,
   getChatSessionDetail,
   deleteChatSession,
   API_BASE_URL
@@ -444,7 +445,7 @@ export default function RepositoryPage({ params }: PageProps) {
                   </div>
                 ) : (
                   <div className="text-center py-20 text-[var(--secondary-text)] text-[14px]">
-                    No summary generated yet. Click 'Regenerate Summary' to create one.
+                    No summary generated yet. Click &apos;Regenerate Summary&apos; to create one.
                   </div>
                 )}
               </div>

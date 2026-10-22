@@ -45,8 +45,6 @@ async def lifespan(app: FastAPI):
             
     yield
 
-from app.api.routers import auth, repositories, chat
-
 app = FastAPI(
     title="CodeBase AI API",
     description="Backend API for CodeBase AI repository understanding platform.",

@@ -153,7 +153,7 @@ export default function DocsPage() {
                     <p>Welcome to CodeBase AI. Follow these steps to begin analyzing your codebase:</p>
                     <ol className="list-decimal pl-5 space-y-3">
                       <li><strong>Navigate to your Dashboard.</strong> This is your central hub for all repositories and chats.</li>
-                      <li><strong>Upload a repository.</strong> Click the "Upload" button and provide a ZIP file containing your codebase.</li>
+                      <li><strong>Upload a repository.</strong> Click the &quot;Upload&quot; button and provide a ZIP file containing your codebase.</li>
                       <li><strong>Wait for indexing.</strong> The platform will extract, chunk, and embed your code for semantic search.</li>
                       <li><strong>Open the repository.</strong> Click on the repository card to view its files, chunks, and initiate AI chats.</li>
                       <li><strong>Start asking questions.</strong> Use the Ask AI feature to understand architecture, flows, and dependencies.</li>
@@ -177,7 +177,7 @@ export default function DocsPage() {
                       </ul>
                     </div>
                     <p>
-                      If indexing fails (e.g., due to an unreadable archive or API failure), the repository card will show a red "Failed" status. You can delete it and try again.
+                      If indexing fails (e.g., due to an unreadable archive or API failure), the repository card will show a red &quot;Failed&quot; status. You can delete it and try again.
                     </p>
                   </div>
                 </section>
@@ -191,13 +191,13 @@ export default function DocsPage() {
                     <p className="mb-2">Example queries you can try:</p>
                     <div className="grid gap-3">
                       <div className="p-3 bg-[var(--surface)] border border-[var(--border)] rounded-[8px] text-[14px] text-[var(--primary-text)]">
-                        "How does authentication work in this app?"
+                        &quot;How does authentication work in this app?&quot;
                       </div>
                       <div className="p-3 bg-[var(--surface)] border border-[var(--border)] rounded-[8px] text-[14px] text-[var(--primary-text)]">
-                        "Where is the database connection configured?"
+                        &quot;Where is the database connection configured?&quot;
                       </div>
                       <div className="p-3 bg-[var(--surface)] border border-[var(--border)] rounded-[8px] text-[14px] text-[var(--primary-text)]">
-                        "Explain the investment calculation logic in utils.ts."
+                        &quot;Explain the investment calculation logic in utils.ts.&quot;
                       </div>
                     </div>
                   </div>

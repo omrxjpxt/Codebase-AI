@@ -15,6 +15,7 @@ class RepositoryResponse(RepositoryBase):
     user_id: uuid.UUID
     status: str
     error_message: Optional[str] = None
+    summary: Optional[str] = None
     upload_date: datetime
 
     model_config = ConfigDict(from_attributes=True)

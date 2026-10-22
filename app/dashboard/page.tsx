@@ -59,10 +59,10 @@ export default function DashboardPage() {
     loadData();
   }, [router]);
 
-  // Polling for processing/embedding repositories
+  // Polling for pending/indexing repositories
   useEffect(() => {
     const isProcessing = repositories.some(
-      r => r.status === "processing" || r.status === "embedding"
+      r => r.status === "pending" || r.status === "indexing" || r.status === "processing" || r.status === "embedding"
     );
     
     if (isProcessing) {

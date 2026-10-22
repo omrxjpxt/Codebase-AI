@@ -157,7 +157,7 @@ export default function SearchModal() {
               ) : !hasResults ? (
                 <div className="flex flex-col items-center justify-center py-12 text-[var(--muted-text)]">
                   <Command size={32} className="mb-3 opacity-20" />
-                  <p className="text-[13px]">No results found for "{query}"</p>
+                  <p className="text-[13px]">No results found for &quot;{query}&quot;</p>
                 </div>
               ) : (
                 <div className="space-y-4 p-2">

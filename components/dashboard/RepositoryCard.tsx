@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FolderOpen, Circle } from "lucide-react";
+import { FolderOpen } from "lucide-react";
 import { Repository } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -9,6 +9,7 @@ interface RepositoryCardProps {
 
 const statusConfig: Record<string, { label: string; color: string; dot: string }> = {
   indexed: { label: "Indexed", color: "text-emerald-400", dot: "bg-emerald-400" },
+  completed: { label: "Indexed", color: "text-emerald-400", dot: "bg-emerald-400" },
   indexing: { label: "Indexing", color: "text-blue-400", dot: "bg-blue-400" },
   pending: { label: "Pending", color: "text-amber-400", dot: "bg-amber-400" },
   failed: { label: "Failed", color: "text-red-400", dot: "bg-red-400" },

@@ -54,7 +54,7 @@ export default function HeaderActions() {
             <div className="p-8 flex flex-col items-center justify-center text-center">
               <Bell size={24} className="text-[var(--placeholder-text)] mb-2" />
               <p className="text-[13px] text-[var(--secondary-text)] font-medium">No notifications yet</p>
-              <p className="text-[12px] text-[var(--muted-text)] mt-1">When you get updates, they'll show up here.</p>
+              <p className="text-[12px] text-[var(--muted-text)] mt-1">When you get updates, they&apos;ll show up here.</p>
             </div>
           </div>
         )}
