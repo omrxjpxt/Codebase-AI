@@ -33,7 +33,7 @@ async def list_all_chat_sessions(
 ):
     stmt = (
         select(ChatSession, Repository.name)
-        .join(Repository, ChatSession.repository_id == Repository.id)
+        .join(Repository, (ChatSession.repository_id == Repository.id) & (Repository.user_id == current_user.id))
         .where(ChatSession.user_id == current_user.id)
         .order_by(ChatSession.created_at.desc())
     )

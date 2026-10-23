@@ -7,6 +7,8 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+import re
+
 async def download_github_repo(url: str) -> str:
     """
     Downloads a public GitHub repository as a ZIP archive.
@@ -14,14 +16,11 @@ async def download_github_repo(url: str) -> str:
     Returns the path to the downloaded ZIP file.
     """
     url = url.strip()
-    if url.endswith(".git"):
-        url = url[:-4]
-    
-    parts = url.replace("https://github.com/", "").strip("/").split("/")
-    if len(parts) < 2:
+    match = re.search(r"github\.com[/:]([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+?)(?:\.git)?(?:/|$)", url)
+    if not match:
         raise ValueError("Invalid GitHub URL. Must be in format: https://github.com/owner/repo")
         
-    owner, repo = parts[0], parts[1]
+    owner, repo = match.group(1), match.group(2)
     
     # GitHub zipball API endpoint for the default branch (main/master)
     api_url = f"https://api.github.com/repos/{owner}/{repo}/zipball"

@@ -77,6 +77,12 @@ async def list_chat_sessions(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
+    # Verify repo ownership
+    repo_stmt = select(Repository).where(Repository.id == id, Repository.user_id == current_user.id)
+    repo = (await db.execute(repo_stmt)).scalar_one_or_none()
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found")
+        
     stmt = select(ChatSession).where(
         ChatSession.repository_id == id, 
         ChatSession.user_id == current_user.id
@@ -164,7 +170,7 @@ async def ask_chat_session(
     if not session:
         raise HTTPException(status_code=404, detail="Chat session not found")
         
-    repo_stmt = select(Repository).where(Repository.id == session.repository_id)
+    repo_stmt = select(Repository).where(Repository.id == session.repository_id, Repository.user_id == current_user.id)
     repo = (await db.execute(repo_stmt)).scalar_one_or_none()
     if not repo:
         raise HTTPException(status_code=404, detail="Repository not found")

@@ -52,7 +52,11 @@ async def upload_repository(
         try:
             repo = await process_and_store_repository(db, current_user.id, repo_name, temp_path)
             return repo
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
         except Exception as e:
+            if isinstance(e, HTTPException):
+                raise e
             raise HTTPException(status_code=500, detail=str(e))
     finally:
         if settings.DELETE_UPLOADED_ZIP_AFTER_INDEXING and os.path.exists(temp_path):
@@ -83,7 +87,11 @@ async def import_github_repository(
             repo.github_url = request.github_url
             await db.commit()
             return repo
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
         except Exception as e:
+            if isinstance(e, HTTPException):
+                raise e
             raise HTTPException(status_code=500, detail=str(e))
     finally:
         if settings.DELETE_UPLOADED_ZIP_AFTER_INDEXING and os.path.exists(temp_path):

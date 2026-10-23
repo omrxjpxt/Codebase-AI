@@ -126,85 +126,90 @@ def extract_and_scan_zip(zip_filepath: str) -> list[dict]:
     extracted_files = []
     
     with tempfile.TemporaryDirectory() as temp_dir:
-        with zipfile.ZipFile(zip_filepath, 'r') as zip_ref:
-            # 1. Detect wrapper directory (e.g. GitHub zipball wrapper: owner-repo-sha/)
-            wrapper_dir = detect_archive_wrapper_dir(zip_ref.namelist())
-            if wrapper_dir:
-                logger.info(f"Detected archive wrapper directory: {wrapper_dir}")
+        try:
+            with zipfile.ZipFile(zip_filepath, 'r') as zip_ref:
+                # 1. Detect wrapper directory (e.g. GitHub zipball wrapper: owner-repo-sha/)
+                wrapper_dir = detect_archive_wrapper_dir(zip_ref.namelist())
+                if wrapper_dir:
+                    logger.info(f"Detected archive wrapper directory: {wrapper_dir}")
+                    
+                total_uncompressed = 0
+                file_count = 0
                 
-            total_uncompressed = 0
-            file_count = 0
+                # 2. Extract each member safely
+                for member in zip_ref.infolist():
+                    # Skip directory entries
+                    if member.is_dir() or member.filename.endswith('/') or member.filename.endswith('\\'):
+                        continue
+                        
+                    # Skip symlinks
+                    if is_zip_symlink(member):
+                        logger.warning(f"Skipping symlink in archive: {member.filename}")
+                        continue
+                        
+                    # Validate against Zip-Slip traversal
+                    if not is_safe_zip_path(temp_dir, member.filename):
+                        logger.warning(f"Blocked Zip-Slip path traversal attempt: {member.filename}")
+                        continue
+                        
+                    # Check limits
+                    file_count += 1
+                    if file_count > MAX_TOTAL_FILES:
+                        logger.warning(f"Archive exceeded max file count limit ({MAX_TOTAL_FILES}). Truncating extraction.")
+                        break
+                        
+                    if member.file_size > MAX_FILE_SIZE_BYTES:
+                        logger.warning(f"Skipping file exceeding size limit ({member.file_size} bytes): {member.filename}")
+                        continue
+                        
+                    total_uncompressed += member.file_size
+                    if total_uncompressed > MAX_TOTAL_UNCOMPRESSED_BYTES:
+                        logger.warning(f"Archive exceeded total uncompressed limit ({MAX_TOTAL_UNCOMPRESSED_BYTES} bytes). Truncating extraction.")
+                        break
+                        
+                    # Safe sanitized target destination
+                    sanitized_rel = member.filename.replace('\\', '/')
+                    target_path = os.path.join(temp_dir, *[s for s in sanitized_rel.split('/') if s and s != '.'])
+                    
+                    os.makedirs(os.path.dirname(target_path), exist_ok=True)
+                    with zip_ref.open(member) as source, open(target_path, 'wb') as target:
+                        shutil.copyfileobj(source, target)
+        except zipfile.BadZipFile:
+            raise ValueError("Invalid or corrupted ZIP archive.")
+        except zipfile.LargeZipFile:
+            raise ValueError("ZIP archive exceeds standard limits and requires ZIP64 support.")
+                    
+        # 3. Scan extracted files
+        for root, dirs, files in os.walk(temp_dir):
+            # Filter directories in-place to avoid walking into ignored ones
+            dirs[:] = [d for d in dirs if d not in IGNORE_DIRS and not d.startswith('.')]
             
-            # 2. Extract each member safely
-            for member in zip_ref.infolist():
-                # Skip directory entries
-                if member.is_dir() or member.filename.endswith('/') or member.filename.endswith('\\'):
-                    continue
-                    
-                # Skip symlinks
-                if is_zip_symlink(member):
-                    logger.warning(f"Skipping symlink in archive: {member.filename}")
-                    continue
-                    
-                # Validate against Zip-Slip traversal
-                if not is_safe_zip_path(temp_dir, member.filename):
-                    logger.warning(f"Blocked Zip-Slip path traversal attempt: {member.filename}")
-                    continue
-                    
-                # Check limits
-                file_count += 1
-                if file_count > MAX_TOTAL_FILES:
-                    logger.warning(f"Archive exceeded max file count limit ({MAX_TOTAL_FILES}). Truncating extraction.")
-                    break
-                    
-                if member.file_size > MAX_FILE_SIZE_BYTES:
-                    logger.warning(f"Skipping file exceeding size limit ({member.file_size} bytes): {member.filename}")
-                    continue
-                    
-                total_uncompressed += member.file_size
-                if total_uncompressed > MAX_TOTAL_UNCOMPRESSED_BYTES:
-                    logger.warning(f"Archive exceeded total uncompressed limit ({MAX_TOTAL_UNCOMPRESSED_BYTES} bytes). Truncating extraction.")
-                    break
-                    
-                # Safe sanitized target destination
-                sanitized_rel = member.filename.replace('\\', '/')
-                target_path = os.path.join(temp_dir, *[s for s in sanitized_rel.split('/') if s and s != '.'])
+            for file in files:
+                file_path = os.path.join(root, file)
+                raw_rel_path = os.path.relpath(file_path, temp_dir)
                 
-                os.makedirs(os.path.dirname(target_path), exist_ok=True)
-                with zip_ref.open(member) as source, open(target_path, 'wb') as target:
-                    shutil.copyfileobj(source, target)
-                    
-            # 3. Scan extracted files
-            for root, dirs, files in os.walk(temp_dir):
-                # Filter directories in-place to avoid walking into ignored ones
-                dirs[:] = [d for d in dirs if d not in IGNORE_DIRS and not d.startswith('.')]
+                # Normalize path (convert to forward slashes and strip wrapper directory)
+                rel_path = normalize_file_path(raw_rel_path, wrapper_dir)
                 
-                for file in files:
-                    file_path = os.path.join(root, file)
-                    raw_rel_path = os.path.relpath(file_path, temp_dir)
+                if is_ignored_path(rel_path):
+                    continue
                     
-                    # Normalize path (convert to forward slashes and strip wrapper directory)
-                    rel_path = normalize_file_path(raw_rel_path, wrapper_dir)
+                language = detect_language(file)
+                if not language:
+                    continue
                     
-                    if is_ignored_path(rel_path):
-                        continue
-                        
-                    language = detect_language(file)
-                    if not language:
-                        continue
-                        
-                    try:
-                        with open(file_path, 'r', encoding='utf-8') as f:
-                            content = f.read()
-                    except UnicodeDecodeError:
-                        continue  # Skip non-text/binary files
-                        
-                    size = os.path.getsize(file_path)
-                    extracted_files.append({
-                        "path": rel_path,
-                        "language": language,
-                        "size": size,
-                        "content": content
-                    })
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                except UnicodeDecodeError:
+                    continue  # Skip non-text/binary files
                     
+                size = os.path.getsize(file_path)
+                extracted_files.append({
+                    "path": rel_path,
+                    "language": language,
+                    "size": size,
+                    "content": content
+                })
+                
     return extracted_files

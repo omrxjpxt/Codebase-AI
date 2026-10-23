@@ -216,7 +216,8 @@ export default function RepositoryPage({ params }: PageProps) {
       });
 
       if (!res.ok) {
-        throw new Error(`Failed to stream: ${res.statusText}`);
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to stream: ${res.statusText || res.status}`);
       }
 
       const reader = res.body?.getReader();

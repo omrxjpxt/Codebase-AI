@@ -71,6 +71,7 @@ async def global_search(
 
         # 4. Search Chat Sessions
         chat_stmt = select(ChatSession, Repository.name).join(Repository).where(
+            ChatSession.user_id == current_user.id,
             ChatSession.repository_id.in_(user_repo_ids),
             ChatSession.title.ilike(search_term)
         ).limit(5)

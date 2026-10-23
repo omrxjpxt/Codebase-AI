@@ -55,21 +55,39 @@ export default function SourceViewerModal({
     }
   };
 
-  // Map backend language extensions to SyntaxHighlighter languages
-  const mapLanguage = (ext: string) => {
+  // Map backend language extensions or names to SyntaxHighlighter languages
+  const mapLanguage = (langOrExt: string) => {
+    if (!langOrExt) return "javascript";
+    const clean = langOrExt.replace(".", "").toLowerCase().trim();
     const map: Record<string, string> = {
       "js": "javascript",
+      "javascript": "javascript",
       "jsx": "jsx",
       "ts": "typescript",
+      "typescript": "typescript",
       "tsx": "tsx",
       "py": "python",
+      "python": "python",
+      "java": "java",
+      "dart": "dart",
+      "go": "go",
+      "rust": "rust",
+      "cpp": "cpp",
+      "c": "c",
+      "c#": "csharp",
+      "csharp": "csharp",
       "html": "html",
       "css": "css",
       "json": "json",
-      "md": "markdown"
+      "md": "markdown",
+      "markdown": "markdown",
+      "sql": "sql",
+      "yaml": "yaml",
+      "yml": "yaml",
+      "bash": "bash",
+      "shell": "bash",
     };
-    const cleanExt = ext.replace(".", "").toLowerCase();
-    return map[cleanExt] || "javascript";
+    return map[clean] || "javascript";
   };
 
   if (!isOpen) return null;

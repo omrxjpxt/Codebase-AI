@@ -116,10 +116,10 @@ async def generate_embeddings_for_repo(repo_id: uuid.UUID):
                     await db.commit()
                     logger.info(f"Repository {repo_id} already has all {total_count} chunks indexed.")
                 else:
-                    repo.status = "indexed"
-                    repo.error_message = None
+                    repo.status = "failed"
+                    repo.error_message = "No code chunks available to index in this repository."
                     await db.commit()
-                    logger.info(f"Repository {repo_id} has 0 chunks to index.")
+                    logger.warning(f"Repository {repo_id} marked failed: 0 chunks available to index.")
                 return
 
             chunks_processed = 0
@@ -193,16 +193,19 @@ async def process_and_store_repository(
     db.add(repo)
     await db.commit()
     await db.refresh(repo)
+    repo_id = repo.id
     
     try:
         # 2. Extract and scan files
         extracted_files = extract_and_scan_zip(zip_filepath)
+        if not extracted_files:
+            raise ValueError("No supported code files found in repository archive.")
         
         # 3. Process each file
         for file_data in extracted_files:
             # Create File entry
             db_file = File(
-                repository_id=repo.id,
+                repository_id=repo_id,
                 path=file_data["path"],
                 language=file_data["language"],
                 size=file_data["size"],
@@ -215,7 +218,7 @@ async def process_and_store_repository(
             chunks = chunk_file(file_data["content"])
             for i, chunk_data in enumerate(chunks):
                 db_chunk = Chunk(
-                    repository_id=repo.id,
+                    repository_id=repo_id,
                     file_id=db_file.id,
                     content=chunk_data["content"],
                     metadata_={
@@ -230,15 +233,15 @@ async def process_and_store_repository(
         await db.commit()
         
         # 4. Generate embeddings in background
-        asyncio.create_task(generate_embeddings_for_repo(repo.id))
+        asyncio.create_task(generate_embeddings_for_repo(repo_id))
         
         await db.refresh(repo)
         return repo
         
     except Exception as e:
         await db.rollback()
-        # Mark as failed
-        stmt = select(Repository).where(Repository.id == repo.id)
+        # Mark as failed using saved repo_id
+        stmt = select(Repository).where(Repository.id == repo_id)
         result = await db.execute(stmt)
         failed_repo = result.scalar_one_or_none()
         if failed_repo:
