@@ -9,9 +9,28 @@ from google.genai.errors import APIError
 from fastapi import HTTPException, status
 from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_exception
 
+import math
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+def format_code_chunk_for_embedding(file_path: Optional[str], code_content: str) -> str:
+    """
+    Format a code chunk for asymmetric retrieval with gemini-embedding-2.
+    Document structure: 'title: {file_path} | text: {code_content}' (or 'title: none | text: {code_content}')
+    """
+    title = file_path.strip() if file_path and file_path.strip() else "none"
+    return f"title: {title} | text: {code_content}"
+
+
+def format_query_for_embedding(question: str) -> str:
+    """
+    Format a user question for code retrieval with gemini-embedding-2.
+    Query structure: 'task: code retrieval | query: {question}'
+    """
+    cleaned = question.strip() if question else ""
+    return f"task: code retrieval | query: {cleaned}"
 
 
 def is_retryable_gemini_error(exc: BaseException) -> bool:
@@ -48,6 +67,12 @@ class GeminiService:
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail=f"Embedding dimension mismatch: expected {expected}, got {actual}"
             )
+        for v in embedding:
+            if not isinstance(v, (int, float)) or math.isnan(v) or math.isinf(v):
+                raise HTTPException(
+                    status_code=status.HTTP_502_BAD_GATEWAY,
+                    detail="Invalid float value (NaN/Inf/non-numeric) detected in embedding vector."
+                )
 
     def _handle_api_error(self, e: Exception) -> None:
         """Translates underlying exceptions to appropriate FastAPI HTTPExceptions."""
@@ -109,7 +134,7 @@ class GeminiService:
     )
     async def _embed_contents_raw(
         self, 
-        contents: Union[str, List[str]], 
+        contents: Union[str, List[str], types.Content, List[types.Content]], 
         model: str
     ) -> types.EmbedContentResponse:
         client = self._get_client()
@@ -117,13 +142,34 @@ class GeminiService:
         config = types.EmbedContentConfig(
             output_dimensionality=settings.EMBEDDING_DIMENSIONS
         )
+
+        # Normalize contents into distinct types.Content objects.
+        # Plain strings or lists of strings are wrapped in separate types.Content
+        # objects containing types.Part.from_text to guarantee independent embeddings
+        # per input rather than one aggregated document embedding.
+        normalized_contents: List[types.Content] = []
+        if isinstance(contents, str):
+            normalized_contents = [types.Content(parts=[types.Part.from_text(text=contents)])]
+        elif isinstance(contents, list):
+            for item in contents:
+                if isinstance(item, str):
+                    normalized_contents.append(types.Content(parts=[types.Part.from_text(text=item)]))
+                elif isinstance(item, types.Content):
+                    normalized_contents.append(item)
+                else:
+                    normalized_contents.append(item)
+        elif isinstance(contents, types.Content):
+            normalized_contents = [contents]
+        else:
+            normalized_contents = contents
+
         response = await client.aio.models.embed_content(
             model=model,
-            contents=contents,
+            contents=normalized_contents,
             config=config
         )
         duration = time.time() - start_time
-        num_items = len(contents) if isinstance(contents, list) else 1
+        num_items = len(normalized_contents) if isinstance(normalized_contents, list) else 1
         logger.info(f"Gemini API embed_content generated {num_items} embedding(s) using {model} (dim={settings.EMBEDDING_DIMENSIONS}) in {duration:.2f}s")
         return response
 
@@ -135,7 +181,12 @@ class GeminiService:
         if not texts:
             return []
         try:
-            response = await self._embed_contents_raw(contents=texts, model=model)
+            # Construct distinct Content objects for each text item
+            content_objects = [
+                types.Content(parts=[types.Part.from_text(text=t)])
+                for t in texts
+            ]
+            response = await self._embed_contents_raw(contents=content_objects, model=model)
             if not response or not response.embeddings:
                 raise HTTPException(
                     status_code=status.HTTP_502_BAD_GATEWAY,
@@ -144,10 +195,15 @@ class GeminiService:
             if len(response.embeddings) != len(texts):
                 raise HTTPException(
                     status_code=status.HTTP_502_BAD_GATEWAY,
-                    detail=f"Embedding batch count mismatch: expected {len(texts)}, got {len(response.embeddings)}"
+                    detail=f"Embedding batch count mismatch: expected {len(texts)} distinct embeddings, got {len(response.embeddings)}."
                 )
             result: List[List[float]] = []
-            for emb in response.embeddings:
+            for idx, emb in enumerate(response.embeddings):
+                if emb is None or not hasattr(emb, "values") or emb.values is None:
+                    raise HTTPException(
+                        status_code=status.HTTP_502_BAD_GATEWAY,
+                        detail=f"Malformed embedding item at index {idx} in response."
+                    )
                 values = emb.values
                 self._validate_embedding_dimension(values)
                 result.append(values)

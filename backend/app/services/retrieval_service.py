@@ -12,10 +12,11 @@ from app.models.file import File
 
 logger = logging.getLogger(__name__)
 
-from app.services.gemini_service import gemini_service
+from app.services.gemini_service import gemini_service, format_query_for_embedding
 
 async def generate_query_embedding(question: str) -> list[float]:
-    return await gemini_service.embed_content(text=question)
+    formatted_query = format_query_for_embedding(question)
+    return await gemini_service.embed_content(text=formatted_query)
 
 async def retrieve_relevant_chunks(
     db: AsyncSession, 

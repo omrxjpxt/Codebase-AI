@@ -7,7 +7,7 @@ from app.models.repository import Repository
 from app.models.file import File
 from app.models.chunk import Chunk
 from app.services.repository_service import generate_embeddings_for_repo
-from app.services.retrieval_service import retrieve_relevant_chunks
+from app.services.retrieval_service import retrieve_relevant_chunks, generate_query_embedding
 from app.core.config import settings
 from tests.conftest import TestSessionLocal
 
@@ -402,4 +402,76 @@ async def test_reindexing_regenerates_mismatched_model_embeddings(test_user_a):
             if r:
                 await session.delete(r)
                 await session.commit()
+
+
+@pytest.mark.asyncio
+async def test_indexing_formats_retrieval_document_and_preserves_raw_chunk_content(test_user_a):
+    repo_id = uuid.uuid4()
+    file_id = uuid.uuid4()
+    chunk_id = uuid.uuid4()
+
+    raw_code = "def authenticate(user, password):\n    return verify(password)\n"
+
+    async with TestSessionLocal() as session:
+        repo = Repository(
+            id=repo_id,
+            user_id=test_user_a.id,
+            name="test-format-repo",
+            status="pending"
+        )
+        session.add(repo)
+        
+        file_obj = File(
+            id=file_id,
+            repository_id=repo_id,
+            path="app/auth/security.py",
+            language="Python",
+            size=len(raw_code),
+            content=raw_code
+        )
+        session.add(file_obj)
+        
+        chunk = Chunk(
+            id=chunk_id,
+            repository_id=repo_id,
+            file_id=file_id,
+            content=raw_code,
+            metadata_={"chunk_index": 0, "path": "app/auth/security.py", "start_line": 1, "end_line": 2}
+        )
+        session.add(chunk)
+        await session.commit()
+
+    try:
+        mock_vector = [[0.05] * 768]
+        with patch("app.services.gemini_service.gemini_service.embed_contents_batch", return_value=mock_vector) as mock_batch:
+            await generate_embeddings_for_repo(repo_id)
+
+        # 1. Verify the formatted string sent to embed_contents_batch
+        mock_batch.assert_called_once()
+        submitted_texts = mock_batch.call_args[0][0]
+        assert len(submitted_texts) == 1
+        assert submitted_texts[0] == f"title: app/auth/security.py | text: {raw_code}"
+
+        # 2. Verify Chunk.content in the database was NOT altered and remains raw original code
+        async with TestSessionLocal() as session:
+            chunk_stmt = select(Chunk).where(Chunk.id == chunk_id)
+            c = (await session.execute(chunk_stmt)).scalar_one()
+            assert c.content == raw_code
+            assert "title: app/auth/security.py" not in c.content
+    finally:
+        async with TestSessionLocal() as session:
+            stmt = select(Repository).where(Repository.id == repo_id)
+            r = (await session.execute(stmt)).scalar_one_or_none()
+            if r:
+                await session.delete(r)
+                await session.commit()
+
+
+@pytest.mark.asyncio
+async def test_generate_query_embedding_applies_code_retrieval_task_prefix():
+    with patch("app.services.retrieval_service.gemini_service.embed_content", return_value=[0.1] * 768) as mock_embed:
+        res = await generate_query_embedding("how to configure database?")
+        assert res == [0.1] * 768
+        mock_embed.assert_called_once_with(text="task: code retrieval | query: how to configure database?")
+
 

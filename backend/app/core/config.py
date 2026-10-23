@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     GITHUB_REDIRECT_URI: str = "http://localhost:8000/auth/github/callback"
     
     LLM_PROVIDER: str = "gemini"
-    CHAT_MODEL: str = "gemini-2.5-flash"
+    CHAT_MODEL: str = "gemini-3.8-flash"
     EMBEDDING_MODEL: str = "gemini-embedding-2"
     EMBEDDING_DIMENSIONS: int = 768
     GEMINI_API_KEY: Optional[str] = None

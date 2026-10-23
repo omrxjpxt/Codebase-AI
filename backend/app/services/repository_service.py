@@ -12,7 +12,7 @@ from app.models.file import File
 from app.models.chunk import Chunk
 from app.services.file_processor import extract_and_scan_zip
 from app.services.chunking import chunk_file
-from app.services.gemini_service import gemini_service
+from app.services.gemini_service import gemini_service, format_code_chunk_for_embedding
 from app.db.database import AsyncSessionLocal
 from app.core.config import settings
 
@@ -131,7 +131,13 @@ async def generate_embeddings_for_repo(repo_id: uuid.UUID):
 
             for i in range(0, total_to_process, BATCH_SIZE):
                 batch = chunks[i:i + BATCH_SIZE]
-                batch_texts = [c.content for c in batch]
+                batch_texts = [
+                    format_code_chunk_for_embedding(
+                        (c.metadata_ or {}).get("path"),
+                        c.content
+                    )
+                    for c in batch
+                ]
                 
                 # Call batch embedding API via GeminiService
                 embeddings = await gemini_service.embed_contents_batch(batch_texts)

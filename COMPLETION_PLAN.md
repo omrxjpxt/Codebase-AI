@@ -181,3 +181,41 @@ All configured models audited against official Google Gemini API documentation; 
    - Frontend lint passes (`npm run lint`: 0 errors).
    - Production Next.js build succeeds cleanly (`npm run build`: Exit code: 0).
 
+---
+
+## Phase 4.2: Embedding Semantics, Retrieval Quality & Model Readiness (COMPLETED)
+
+### Status: COMPLETED
+Addressed SDK embedding request semantics, retrieval prompt formatting according to official Google documentation, and generation model catalogue updates:
+
+1. **Embedding Request Semantics & Content-Object Isolation:**
+   - **Transformer Analysis:** Deep audit of `google-genai` SDK (`_transformers.t_contents`) confirmed that submitting a plain list of strings (`["s1", "s2"]`) groups them into a single `UserContent` with multiple parts, which causes `gemini-embedding-2` to return a single aggregated document embedding rather than independent embeddings per chunk.
+   - **Content Wrapping:** Hardened `GeminiService.embed_contents_batch` and `_embed_contents_raw` to wrap each chunk into an independent `types.Content(parts=[types.Part.from_text(text=t)])`. This ensures `t_contents` produces $N$ separate `Content` objects, guaranteeing exactly one discrete embedding per submitted code chunk.
+   - **Count Invariant & Strict Validation:** Enforced that `len(response.embeddings) == len(texts)` before any database writes. Added checks rejecting `None`, `NaN`, `Inf`, and dimensionally mismatched vector values with HTTP 502 Bad Gateway.
+   - **SDK Pinning:** Pinned `google-genai>=2.10.0` in `backend/requirements.txt`.
+
+2. **Retrieval-Specific Embedding Formatting:**
+   - Implemented documented Gemini asymmetric retrieval prefixes:
+     - **Repository Code Chunks:** Formatted as `title: {file_path} | text: {code_content}` (or `title: none | text: {code_content}` when path is empty/missing). Raw original source code is preserved in `Chunk.content` in the database and in displayed source citations.
+     - **User Questions:** Formatted as `task: code retrieval | query: {question}`.
+   - Documented that legacy `task_type` parameter is not used with `gemini-embedding-2`.
+
+3. **Generation Model Catalogue Audit:**
+   - Audited Google Gemini model availability catalogue: access to Gemini 2.5 series is restricted to legacy accounts with historical usage history, with Google directing new projects to latest Flash generations.
+   - Updated `CHAT_MODEL` default to `gemini-3.8-flash` in `backend/app/core/config.py`, `backend/.env.example`, and `backend/.env`.
+
+4. **Verification & Regression Suite:**
+   - **45/45 backend tests passing** in `backend/tests` (`./venv/bin/pytest -v`: 13.24s).
+   - Added 7 new unit & integration regression tests:
+     - `test_embed_contents_batch_builds_separate_content_objects`
+     - `test_batch_embedding_fails_on_aggregated_response_count_mismatch`
+     - `test_batch_embedding_fails_on_nan_or_inf_embedding`
+     - `test_format_code_chunk_for_embedding`
+     - `test_format_query_for_embedding`
+     - `test_indexing_formats_retrieval_document_and_preserves_raw_chunk_content`
+     - `test_generate_query_embedding_applies_code_retrieval_task_prefix`
+   - **Database Integrity:** Verified live database: `samay-main` (42 files, 430 chunks, 0 non-null embeddings, 4 messages, 3 chat sessions) preserved with zero data deletion.
+   - **Frontend Validation:** `npx tsc --noEmit` (0 errors), `npm run lint` (0 errors), `npm run build` (compiled all 11 routes cleanly, Exit code: 0).
+   - **Live API Smoke Test:** Verified `GEMINI_API_KEY` is currently unset; live external calls are safely blocked without mock fabrication in production.
+
+
