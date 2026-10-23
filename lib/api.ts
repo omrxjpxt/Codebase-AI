@@ -55,6 +55,7 @@ export interface ChatMessage {
   chat_session_id?: string;
   role: "user" | "assistant";
   content: string;
+  sources?: any[] | null;
   created_at?: string;
 }
 

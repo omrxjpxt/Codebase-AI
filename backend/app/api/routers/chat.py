@@ -1,5 +1,5 @@
 import uuid
-from typing import List
+from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -39,6 +39,7 @@ class MessageResponse(BaseModel):
     id: uuid.UUID
     role: str
     content: str
+    sources: Optional[List[Dict[str, Any]]] = None
     created_at: datetime
     
     class Config:
@@ -229,7 +230,12 @@ Provide:
                     
             from app.db.database import AsyncSessionLocal
             async with AsyncSessionLocal() as local_db:
-                assistant_msg = Message(chat_session_id=session_id, role="assistant", content=full_text)
+                assistant_msg = Message(
+                    chat_session_id=session_id,
+                    role="assistant",
+                    content=full_text,
+                    sources=sources_data if sources_data else None
+                )
                 local_db.add(assistant_msg)
                 await local_db.commit()
         except Exception as e:

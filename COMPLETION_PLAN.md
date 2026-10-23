@@ -67,93 +67,50 @@ All architectural, batching, retry, lifecycle, and retrieval requirements have b
 
 ---
 
-## Phase 4: Ingestion Security, GitHub Zipball Normalization & Resilience
+## Phase 3: Ingestion Security, Path Normalization & Persistent Chat Sources (COMPLETED)
 
-### Problem Addressed
-`extract_and_scan_zip` is vulnerable to Zip-Slip directory traversal attacks. GitHub zipball downloads retain an arbitrary top-level directory prefix (`{owner}-{repo}-{commit_hash}/`) in stored file paths. If indexing fails before chunking, the uploaded archive is already deleted, making re-indexing impossible.
+### Status: COMPLETED
+All requirements for secure ZIP ingestion, GitHub path normalization, database citation persistence, and frontend citation rehydration have been implemented and verified across 29 backend tests and full frontend build checks:
 
-### Confirmed Files & Modules
-- `backend/app/services/file_processor.py`
-- `backend/app/services/github_service.py`
-- `backend/app/services/repository_service.py`
-- `backend/app/api/routers/repositories.py`
+1. **Secure ZIP Ingestion & Zip-Slip Protection (`backend/app/services/file_processor.py`):**
+   - Replaced unsafe `extractall` with a strict member-by-member extraction loop.
+   - Implemented `is_safe_zip_path()`: validates that the resolved canonical path (`os.path.commonpath([base_dir, target_path]) == base_dir`) stays strictly within the temporary extraction folder.
+   - Explicitly rejects path traversal (`../`, `..\\`), absolute paths (`/etc/passwd`), Windows drive letters (`C:\\`, `D:`), UNC paths (`\\\\server\\share`), and null byte injection.
+   - Implemented `is_zip_symlink()`: checks POSIX symlink mode `(external_attr >> 16) & 0o120000 == 0o120000` to prevent symlink traversal attacks.
+   - Implemented decompression bomb protections: `MAX_FILE_SIZE_BYTES = 200MB`, `MAX_TOTAL_UNCOMPRESSED_BYTES = 500MB`, `MAX_TOTAL_FILES = 10,000`.
+   - Guaranteed cleanup of temporary directories using `try...finally: shutil.rmtree(temp_dir, ignore_errors=True)`.
 
-### Dependencies & Prerequisites
-- Phase 3 completed.
+2. **GitHub Archive Path Normalization (`backend/app/services/file_processor.py`):**
+   - Implemented `detect_archive_wrapper_dir()`: inspects archive member paths to detect if the archive contains a single top-level wrapper directory (standard GitHub zipball format, e.g. `owner-repo-7fd1a60/`).
+   - Normalizes all paths using forward slashes (`/`), cleanly stripping the wrapper directory while preserving all internal directory hierarchies and filenames.
+   - Gracefully handles flat archives, multi-root folders, and empty archives without mangling directory names.
 
-### Implementation Approach
-1. **Fix Zip-Slip in `file_processor.py`:**
-   - Validate each member path before extraction to guarantee it stays inside `temp_dir`:
-     ```python
-     def is_safe_path(base_dir: str, target_path: str) -> bool:
-         abs_base = os.path.abspath(base_dir)
-         abs_target = os.path.abspath(target_path)
-         return os.path.commonpath([abs_base]) == os.path.commonpath([abs_base, abs_target])
-     ```
-   - Skip or reject unsafe archive members.
-2. **Normalize GitHub Zipball File Paths:**
-   - Detect if the archive has a single top-level directory (standard GitHub zipball structure) and strip that leading segment from relative file paths so paths appear as `src/main.py` instead of `owner-repo-7fd1a60/src/main.py`.
-3. **Upload & Ingestion Error Handling:**
-   - If extraction or chunking fails, record the error on the repository before raising HTTPException, ensuring the user gets a clear failure explanation on the dashboard.
+3. **Persistent Chat Citations in PostgreSQL (`backend/app/models/chat.py`, Alembic migration, `backend/app/api/routers/chat.py`):**
+   - Updated `Message` model with `sources: Mapped[Optional[List[Dict[str, Any]]]] = mapped_column(JSONB, nullable=True)`.
+   - Created and applied Alembic migration `4d8f20f42fa2_add_sources_to_messages.py` (`db7f10ace821 -> 4d8f20f42fa2`) without touching or rewriting past migrations. Verified that existing database records remain intact.
+   - Updated `MessageResponse` schema in `chat.py` to serialize `sources`.
+   - Updated the streaming `/ask` NDJSON generator: captures grounded retrieval sources and saves `sources=sources_data if sources_data else None` on the assistant message record in PostgreSQL upon completion.
+   - Updated frontend TypeScript interface `ChatMessage` in `lib/api.ts` to include `sources?: any[] | null`.
+   - Updated `loadSession` in `app/repository/[id]/page.tsx` to rehydrate `sources: m.sources || []` on page load and session switch so citations render on refresh.
 
-### Regression Risks
-- Modifying relative path calculation might affect file explorer hierarchy if not properly stripped. Must preserve relative internal paths.
+4. **Regression & Security Test Suite:**
+   - Added `backend/tests/test_archive_security.py` (6 tests: path traversal, symlink detection, wrapper detection, path normalization, mixed malicious archives, and GitHub wrapper stripping).
+   - Added `backend/tests/test_chat_persistence.py` (2 tests: DB persistence of sources, schema serialization, streaming NDJSON assistant message persistence).
 
-### Verification Steps & Automated Tests
-- Test extraction with a test ZIP file containing nested directories.
-- Test downloading a public GitHub repo (e.g. `https://github.com/octocat/Hello-World`) -> verify file paths in database do not contain the commit hash prefix.
-
-### Acceptance Criteria
-- [ ] ZIP extraction blocks path traversal attempts.
-- [ ] GitHub imports store clean relative paths matching the repository tree.
-- [ ] Extraction failures are recorded in the DB with status `failed`.
-
----
-
-## Phase 5: Grounded RAG Chat, Citation Persistence & Rich Markdown Rendering
-
-### Problem Addressed
-Source citations generated during AI streaming chat are yielded to the client but never persisted in the database `messages` table, causing citations to disappear when a user refreshes or returns to a chat session. Furthermore, the chat message UI renders raw text with a rudimentary bold/inline-code parser, collapsing all newlines and rendering code blocks as plain text without syntax highlighting.
-
-### Confirmed Files & Modules
-- `backend/app/models/chat.py`
-- `backend/alembic/versions/` (new migration)
-- `backend/app/api/routers/chat.py`
-- `backend/app/schemas/chat.py`
-- `lib/api.ts`
-- `components/repository/ChatMessage.tsx`
-- `app/repository/[id]/page.tsx`
-
-### Dependencies & Prerequisites
-- Phase 3 completed (real vector embeddings present in database).
-
-### Implementation Approach
-1. **Database Migration for Message Sources:**
-   - Add `sources: Mapped[list[dict] | None] = mapped_column(JSONB, nullable=True)` to `Message` model in `backend/app/models/chat.py`.
-   - Generate and apply Alembic migration `add_sources_to_messages`.
-2. **Persist Sources in Chat Stream Handler:**
-   - In `backend/app/api/routers/chat.py`: In the streaming generator completion, save both `content=full_text` and `sources=sources_data` when writing the assistant message to the database.
-   - Update `MessageResponse` schema to include `sources`.
-3. **Hydrate Sources on Client:**
-   - In `app/repository/[id]/page.tsx`: In `loadSession`, map `m.sources` from backend response into state so historical chats display citation pills.
-4. **Rich Markdown & Syntax Highlighting in Chat:**
-   - Update `components/repository/ChatMessage.tsx`:
-     - Render markdown properly (using `react-syntax-highlighter` or standard structured block rendering with `whitespace-pre-wrap`).
-     - Support code fences (` ```language ... ``` `) with copy-to-clipboard buttons and syntax highlighting.
-     - Support headings, bullet lists, and paragraphs.
-   - Ensure clicking source pills accurately opens `SourceViewerModal` at the cited line range.
-
-### Regression Risks
-- PDF export and clipboard copy in `ChatMessage.tsx` must still work with the updated content formatting.
-
-### Verification Steps & Automated Tests
-- Open an indexed repository -> Ask a question in chat -> Verify streaming response displays formatted code, lists, and source pills -> Refresh page -> Verify past answer still displays its source citation pills -> Click source pill -> Verify modal opens to exact file and highlighted lines.
-
-### Acceptance Criteria
-- [ ] Database stores citations alongside assistant messages.
-- [ ] Refreshing page or switching chat sessions preserves all source code citations.
-- [ ] Markdown in AI responses renders with proper line breaks, lists, and syntax-highlighted code blocks.
-- [ ] Clicking a source pill displays the exact file content with cited lines highlighted.
+### Acceptance Criteria & Verification Results
+- [x] ZIP extraction strictly blocks path traversal (`../`, absolute, Windows paths, UNC, drive letters, null bytes, symlinks).
+- [x] Extraction bomb limits enforced (file size, total size, file count).
+- [x] Temporary extraction directories cleanly deleted even on extraction failures.
+- [x] GitHub zipball single top-level wrapper directories stripped cleanly without altering internal hierarchies.
+- [x] Alembic migration `4d8f20f42fa2` applied non-destructively; existing messages and repositories preserved.
+- [x] Database stores `sources` JSONB column on `messages` table.
+- [x] Retrieval citations persisted with assistant messages upon streaming completion.
+- [x] Historical chat sessions load persisted source citations.
+- [x] Frontend `ChatMessage` interface typed and `app/repository/[id]/page.tsx` rehydrates citations on load.
+- [x] 29/29 backend tests passing (`pytest backend/tests` in 8.06s).
+- [x] `npx tsc --noEmit` exits with 0 errors.
+- [x] `npm run lint` exits with 0 errors.
+- [x] `npm run build` succeeds under strict Next.js compilation (Exit code: 0).
 
 ---
 

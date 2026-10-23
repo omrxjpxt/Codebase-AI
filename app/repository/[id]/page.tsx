@@ -127,7 +127,7 @@ export default function RepositoryPage({ params }: PageProps) {
         role: m.role,
         content: m.content,
         timestamp: m.created_at || "",
-        sources: [] // We might need to persist sources in DB later, for now leave empty on reload
+        sources: m.sources || []
       })));
     } catch (err) {
       console.error("Failed to load session", err);

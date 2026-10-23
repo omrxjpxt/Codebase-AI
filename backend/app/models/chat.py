@@ -1,8 +1,9 @@
 import uuid
 from datetime import datetime, timezone
+from typing import Optional, List, Dict, Any
 from sqlalchemy import String, DateTime, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 
 from app.db.base import Base
 
@@ -26,6 +27,7 @@ class Message(Base):
     chat_session_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("chat_sessions.id", ondelete="CASCADE"), nullable=False)
     role: Mapped[str] = mapped_column(String, nullable=False) # e.g., 'user', 'assistant'
     content: Mapped[str] = mapped_column(Text, nullable=False)
+    sources: Mapped[Optional[List[Dict[str, Any]]]] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     chat_session = relationship("ChatSession", back_populates="messages")
