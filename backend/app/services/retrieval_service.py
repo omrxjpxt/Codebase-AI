@@ -25,14 +25,15 @@ async def retrieve_relevant_chunks(
 ) -> List[Dict[str, Any]]:
     start_time = time.time()
     
-    # Check if the repository has any embedded chunks
+    # Check if the repository has any embedded chunks matching the active embedding model
     count_stmt = select(func.count()).select_from(Chunk).where(
         Chunk.repository_id == repository_id,
-        Chunk.embedding.is_not(None)
+        Chunk.embedding.is_not(None),
+        Chunk.embedding_model == settings.EMBEDDING_MODEL
     )
     embedded_count = (await db.execute(count_stmt)).scalar() or 0
     if embedded_count == 0:
-        logger.info(f"Repository {repository_id} has 0 embedded chunks. Returning empty sources.")
+        logger.info(f"Repository {repository_id} has 0 embedded chunks matching model {settings.EMBEDDING_MODEL}. Returning empty sources.")
         return []
 
     query_embedding = await generate_query_embedding(question)
@@ -45,8 +46,11 @@ async def retrieve_relevant_chunks(
             Chunk.embedding.cosine_distance(query_embedding).label("distance")
         )
         .join(File, Chunk.file_id == File.id)
-        .where(Chunk.repository_id == repository_id)
-        .where(Chunk.embedding.is_not(None))
+        .where(
+            Chunk.repository_id == repository_id,
+            Chunk.embedding.is_not(None),
+            Chunk.embedding_model == settings.EMBEDDING_MODEL
+        )
         .order_by(Chunk.embedding.cosine_distance(query_embedding))
         .limit(top_k * 3)
     )

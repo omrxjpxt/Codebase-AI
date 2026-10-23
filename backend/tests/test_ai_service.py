@@ -110,3 +110,29 @@ async def test_empty_batch_returns_empty_without_api_call():
         result = await service.embed_contents_batch([])
         assert result == []
         mock_raw.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_embed_contents_raw_configures_output_dimensionality():
+    service = GeminiService()
+    mock_client = MagicMock()
+    mock_aio = MagicMock()
+    mock_models = MagicMock()
+    mock_aio.models = mock_models
+    mock_client.aio = mock_aio
+    service._client = mock_client
+
+    mock_resp = MagicMock()
+    mock_models.embed_content = AsyncMock(return_value=mock_resp)
+
+    res = await service._embed_contents_raw("sample text", model="gemini-embedding-2")
+    assert res == mock_resp
+
+    mock_models.embed_content.assert_called_once()
+    _, kwargs = mock_models.embed_content.call_args
+    assert kwargs["model"] == "gemini-embedding-2"
+    assert kwargs["contents"] == "sample text"
+    config = kwargs["config"]
+    assert config is not None
+    assert config.output_dimensionality == 768
+

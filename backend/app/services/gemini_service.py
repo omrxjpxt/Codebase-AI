@@ -114,13 +114,17 @@ class GeminiService:
     ) -> types.EmbedContentResponse:
         client = self._get_client()
         start_time = time.time()
+        config = types.EmbedContentConfig(
+            output_dimensionality=settings.EMBEDDING_DIMENSIONS
+        )
         response = await client.aio.models.embed_content(
             model=model,
-            contents=contents
+            contents=contents,
+            config=config
         )
         duration = time.time() - start_time
         num_items = len(contents) if isinstance(contents, list) else 1
-        logger.info(f"Gemini API embed_content generated {num_items} embedding(s) in {duration:.2f}s")
+        logger.info(f"Gemini API embed_content generated {num_items} embedding(s) using {model} (dim={settings.EMBEDDING_DIMENSIONS}) in {duration:.2f}s")
         return response
 
     async def embed_contents_batch(

@@ -8,6 +8,7 @@ from app.models.file import File
 from app.models.chunk import Chunk
 from app.services.repository_service import generate_embeddings_for_repo
 from app.services.retrieval_service import retrieve_relevant_chunks
+from app.core.config import settings
 from tests.conftest import TestSessionLocal
 
 
@@ -72,7 +73,7 @@ async def test_indexing_status_lifecycle_and_batch_persistence(test_user_a):
             for c in persisted_chunks:
                 assert c.embedding is not None
                 assert len(c.embedding) == 768
-                assert c.embedding_model == "text-embedding-004"
+                assert c.embedding_model == settings.EMBEDDING_MODEL
                 assert c.embedding_created_at is not None
     finally:
         async with TestSessionLocal() as session:
@@ -197,7 +198,7 @@ async def test_vector_retrieval_with_pgvector_similarity(test_user_a):
             file_id=file_id,
             content="def vector_feature():\n    return 'vector search success'\n",
             embedding=test_vector,
-            embedding_model="text-embedding-004",
+            embedding_model=settings.EMBEDDING_MODEL,
             metadata_={"chunk_index": 0, "path": "src/vector_test.py", "start_line": 1, "end_line": 2}
         )
         session.add(chunk)
@@ -274,3 +275,131 @@ async def test_ask_endpoint_blocks_indexing_and_failed_repositories(client, auth
             if r:
                 await session.delete(r)
                 await session.commit()
+
+
+@pytest.mark.asyncio
+async def test_incompatible_embedding_model_isolated_from_retrieval(test_user_a):
+    """
+    Verify that chunks embedded with an outdated or different embedding model are NOT
+    retrieved or mixed into similarity searches with the active model.
+    """
+    repo_id = uuid.uuid4()
+    file_id = uuid.uuid4()
+    chunk_id = uuid.uuid4()
+
+    test_vector = [0.0] * 768
+    test_vector[0] = 1.0
+
+    async with TestSessionLocal() as session:
+        repo = Repository(
+            id=repo_id,
+            user_id=test_user_a.id,
+            name="test-mismatched-model-repo",
+            status="indexed"
+        )
+        session.add(repo)
+        
+        file_obj = File(
+            id=file_id,
+            repository_id=repo_id,
+            path="src/legacy.py",
+            language="Python",
+            size=50,
+            content="def legacy_code(): pass\n"
+        )
+        session.add(file_obj)
+        
+        chunk = Chunk(
+            id=chunk_id,
+            repository_id=repo_id,
+            file_id=file_id,
+            content="def legacy_code(): pass\n",
+            embedding=test_vector,
+            embedding_model="outdated-model-001",
+            metadata_={"chunk_index": 0, "path": "src/legacy.py", "start_line": 1, "end_line": 1}
+        )
+        session.add(chunk)
+        await session.commit()
+
+    try:
+        async with TestSessionLocal() as session:
+            query_vector = [0.0] * 768
+            query_vector[0] = 1.0
+            
+            with patch("app.services.retrieval_service.generate_query_embedding", return_value=query_vector):
+                sources = await retrieve_relevant_chunks(session, repo_id, "how does legacy work?", top_k=5)
+                # Must be 0 because chunk was embedded with outdated-model-001, not settings.EMBEDDING_MODEL
+                assert len(sources) == 0
+    finally:
+        async with TestSessionLocal() as session:
+            stmt = select(Repository).where(Repository.id == repo_id)
+            r = (await session.execute(stmt)).scalar_one_or_none()
+            if r:
+                await session.delete(r)
+                await session.commit()
+
+
+@pytest.mark.asyncio
+async def test_reindexing_regenerates_mismatched_model_embeddings(test_user_a):
+    """
+    Verify that generate_embeddings_for_repo detects chunks with outdated embedding models
+    and regenerates embeddings using the active settings.EMBEDDING_MODEL.
+    """
+    repo_id = uuid.uuid4()
+    file_id = uuid.uuid4()
+    chunk_id = uuid.uuid4()
+
+    async with TestSessionLocal() as session:
+        repo = Repository(
+            id=repo_id,
+            user_id=test_user_a.id,
+            name="test-reembed-repo",
+            status="pending"
+        )
+        session.add(repo)
+        
+        file_obj = File(
+            id=file_id,
+            repository_id=repo_id,
+            path="src/reembed.py",
+            language="Python",
+            size=50,
+            content="def reembed(): return True\n"
+        )
+        session.add(file_obj)
+        
+        # Chunk has an embedding, but from a legacy model
+        chunk = Chunk(
+            id=chunk_id,
+            repository_id=repo_id,
+            file_id=file_id,
+            content="def reembed(): return True\n",
+            embedding=[0.01] * 768,
+            embedding_model="legacy-model-old",
+            metadata_={"chunk_index": 0, "path": "src/reembed.py", "start_line": 1, "end_line": 1}
+        )
+        session.add(chunk)
+        await session.commit()
+
+    try:
+        new_vector = [[0.99] * 768]
+        with patch("app.services.gemini_service.gemini_service.embed_contents_batch", return_value=new_vector):
+            await generate_embeddings_for_repo(repo_id)
+
+        async with TestSessionLocal() as session:
+            stmt = select(Repository).where(Repository.id == repo_id)
+            r = (await session.execute(stmt)).scalar_one()
+            assert r.status == "indexed"
+
+            chunk_stmt = select(Chunk).where(Chunk.id == chunk_id)
+            c = (await session.execute(chunk_stmt)).scalar_one()
+            assert c.embedding_model == settings.EMBEDDING_MODEL
+            assert list(c.embedding) == [0.99] * 768
+    finally:
+        async with TestSessionLocal() as session:
+            stmt = select(Repository).where(Repository.id == repo_id)
+            r = (await session.execute(stmt)).scalar_one_or_none()
+            if r:
+                await session.delete(r)
+                await session.commit()
+

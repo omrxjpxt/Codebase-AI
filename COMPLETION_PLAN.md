@@ -156,3 +156,28 @@ All full-stack user journeys, adversarial security vectors, cross-user IDOR prot
 | **Search & Repository Exploration** | **VERIFIED** | File explorer tree, syntax-highlighted source viewer modal, and scoped multi-entity search verified. |
 | **Async Batch Embedding & PGVector** | **VERIFIED** | In-database batching (25 chunks/batch), cosine similarity distance retrieval, 768-dim vector schema verified. |
 | **Live Gemini Indexing & Q&A** | **BLOCKED** | All architecture, retries, and retrieval verified. Live external calls safely blocked pending user-configured `GEMINI_API_KEY` in `backend/.env`. |
+
+---
+
+## Phase 4.1: Gemini Model Compatibility & Live AI Readiness (COMPLETED)
+
+### Status: COMPLETED
+All configured models audited against official Google Gemini API documentation; deprecated `text-embedding-004` (shut down Jan 14, 2026) migrated to official `gemini-embedding-2` with Matryoshka Representation Learning (MRL) output dimensionality:
+
+1. **Model Compatibility Audit & Configuration:**
+   - **Embedding Model:** Migrated from deprecated `text-embedding-004` to `gemini-embedding-2` in `config.py`, `.env.example`, and `.env`.
+   - **Output Dimensionality:** Configured `types.EmbedContentConfig(output_dimensionality=768)` in `gemini_service.py` to preserve the 768-dimensional PostgreSQL `pgvector` schema without schema changes or database migrations.
+   - **Generation Model:** Confirmed `gemini-2.5-flash` is fully supported, high-performance, low-latency, and operates over a 1M token context window.
+
+2. **Database Integrity & Mismatched Model Protection:**
+   - Database chunk audit: confirmed 430 chunks exist in `samay-main` with 0 legacy embeddings (`embedding = None`).
+   - Hardened `retrieval_service.py` to filter similarity search by `Chunk.embedding_model == settings.EMBEDDING_MODEL` so incompatible embeddings from legacy models are never mixed into vector calculations.
+   - Hardened `repository_service.py` to detect chunks with mismatched embedding models (`or_(Chunk.embedding.is_(None), Chunk.embedding_model != settings.EMBEDDING_MODEL)`) and automatically re-embed them during indexing.
+
+3. **Verification Results:**
+   - 38/38 backend tests passing in `backend/tests` (Exit code: 0, 12.75s).
+   - Added regression tests for output dimensionality configuration, mismatched model isolation, and model re-embedding.
+   - Frontend TypeScript validation passes (`npx tsc --noEmit`: 0 errors).
+   - Frontend lint passes (`npm run lint`: 0 errors).
+   - Production Next.js build succeeds cleanly (`npm run build`: Exit code: 0).
+

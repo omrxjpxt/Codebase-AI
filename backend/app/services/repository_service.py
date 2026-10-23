@@ -4,7 +4,7 @@ import logging
 import asyncio
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 from fastapi import HTTPException
 
 from app.models.repository import Repository
@@ -89,10 +89,13 @@ async def generate_embeddings_for_repo(repo_id: uuid.UUID):
         await db.commit()
         
         try:
-            # 2. Get all chunks for this repo that don't have embeddings yet
+            # 2. Get all chunks for this repo that don't have embeddings from the active model yet
             chunk_stmt = (
                 select(Chunk)
-                .where(Chunk.repository_id == repo_id, Chunk.embedding.is_(None))
+                .where(
+                    Chunk.repository_id == repo_id,
+                    or_(Chunk.embedding.is_(None), Chunk.embedding_model != settings.EMBEDDING_MODEL)
+                )
                 .order_by(Chunk.id)
             )
             chunk_results = await db.execute(chunk_stmt)
@@ -103,10 +106,10 @@ async def generate_embeddings_for_repo(repo_id: uuid.UUID):
                 total_stmt = select(func.count()).select_from(Chunk).where(Chunk.repository_id == repo_id)
                 total_count = (await db.execute(total_stmt)).scalar() or 0
                 
-                # Verify if any unembedded chunks exist
+                # Verify if any unembedded chunks or chunks with old model exist
                 unembedded_stmt = select(func.count()).select_from(Chunk).where(
                     Chunk.repository_id == repo_id,
-                    Chunk.embedding.is_(None)
+                    or_(Chunk.embedding.is_(None), Chunk.embedding_model != settings.EMBEDDING_MODEL)
                 )
                 unembedded_count = (await db.execute(unembedded_stmt)).scalar() or 0
                 
@@ -114,7 +117,7 @@ async def generate_embeddings_for_repo(repo_id: uuid.UUID):
                     repo.status = "indexed"
                     repo.error_message = None
                     await db.commit()
-                    logger.info(f"Repository {repo_id} already has all {total_count} chunks indexed.")
+                    logger.info(f"Repository {repo_id} already has all {total_count} chunks indexed with {settings.EMBEDDING_MODEL}.")
                 else:
                     repo.status = "failed"
                     repo.error_message = "No code chunks available to index in this repository."
@@ -147,15 +150,15 @@ async def generate_embeddings_for_repo(repo_id: uuid.UUID):
                 await db.commit()
                 logger.info(f"Embedded {chunks_processed}/{total_to_process} chunks for repo {repo_id}.")
                 
-            # 3. Double-check that NO chunks remain unembedded before marking indexed
+            # 3. Double-check that NO chunks remain unembedded or with mismatched model before marking indexed
             unembedded_check = select(func.count()).select_from(Chunk).where(
                 Chunk.repository_id == repo_id,
-                Chunk.embedding.is_(None)
+                or_(Chunk.embedding.is_(None), Chunk.embedding_model != settings.EMBEDDING_MODEL)
             )
             remaining_unembedded = (await db.execute(unembedded_check)).scalar() or 0
             
             if remaining_unembedded > 0:
-                raise ValueError(f"Indexing incomplete: {remaining_unembedded} chunks still lack embeddings.")
+                raise ValueError(f"Indexing incomplete: {remaining_unembedded} chunks lack valid {settings.EMBEDDING_MODEL} embeddings.")
                 
             duration = time.time() - start_time
             logger.info(f"Embedding generation for repo {repo_id} complete. Processed {chunks_processed} chunks in {duration:.2f}s.")
