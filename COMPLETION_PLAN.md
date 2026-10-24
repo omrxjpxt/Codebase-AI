@@ -328,6 +328,55 @@ Successfully audited the indexing limit discrepancy, formalized `max_chunks` sem
    - [x] Production build: 11 / 11 routes built successfully (`npm run build`).
    - [x] No secrets logged; no git resets or history rewrites; existing database records preserved.
 
+---
+
+## Phase 5.2: Complete Real Indexing of samay-main & End-to-End Live AI Workflow (COMPLETED)
+
+### Status: COMPLETED
+Completed real indexing for the target repository `samay-main` using live Google Gemini APIs and PostgreSQL `pgvector`, established the complete-index invariant, and verified grounded retrieval and chat persistence:
+
+1. **Preflight Verification:**
+   - Target Repository: `samay-main` (UUID: `526d46c2-b602-4541-a799-64ee1a5c422e`, Owner: `12a153c2-f68b-4c12-8eac-0e040851d2f4`).
+   - Models: Embedding: `gemini-embedding-2` (dim=768), Chat: `gemini-3.8-flash`.
+   - Credentials & SDK: `GEMINI_API_KEY` present, `google-genai==2.10.0`.
+   - Database state before indexing: 430 total chunks, 10 valid active-model embeddings, 420 missing embeddings, 0 stale embeddings, status `partially_indexed`.
+
+2. **Rate Limit Tuning & Production Pipeline Execution:**
+   - **Provider Limit Identified:** Google AI Studio Free Tier enforces 30,000 Tokens Per Minute (`generativelanguage.googleapis.com/embed_content_free_tier_tokens`).
+   - **Safe Bounded Pipeline Tuning:** Set `BATCH_SIZE = 15` in `repository_service.py` with 4-second inter-batch delay and updated Tenacity retry backoff (`min=15, max=75, stop=10`) in `gemini_service.py` to automatically bridge 60-second token quota windows without dropping requests.
+   - **Execution & Persistence:**
+     - Initial batch run processed 75 chunks (surpassing 85 total).
+     - Resumption run processed the remaining 345 chunks across 23 batches in 304.88 seconds with 0 failures.
+     - All 10 existing embeddings from Phase 5 were preserved untouched.
+     - Architectural overview summary generated and persisted (6,113 characters).
+     - Incremental commits ensured no duplicate API calls and zero data loss.
+
+3. **Complete-Index Invariant Verification:**
+   - Total chunks in repository: **430**
+   - Valid `gemini-embedding-2` 768-dim embeddings: **430** (100.0%)
+   - Missing embeddings: **0**
+   - Stale or incompatible embeddings: **0**
+   - Repository status: **`indexed`** (Satisfies strict complete-index invariant in `get_repository_readiness`).
+
+4. **Live End-to-End AI Workflow & Grounded Q&A Verification:**
+   - Question: *"In samay-main, what validation and fields are required when creating a new poll in pages/api/poll/create.ts?"*
+   - Live Query Embedding: 768-dim vector generated via `gemini-embedding-2`.
+   - pgvector Cosine Retrieval:
+     - Match 1: `samay-main/pages/api/poll/create.ts` (score: 0.8170)
+     - Match 2: `samay-main/src/models/poll.ts` (score: 0.7580)
+     - Match 3: `samay-main/pages/index.tsx` (score: 0.7560)
+   - Grounded Generation (`gemini-3.8-flash`): Generated accurate 2,544-character technical response detailing HTTP POST method checking, JSON parsing, Mongoose `PollSchema` validation (`secret` and `times` required), and API response codes (201, 400, 405).
+   - Persistence Verification: Persisted to ChatSession `7452f000-e2db-446a-8d89-8a5574fcc883` with 3 source citations; reloaded and verified all fields, scores, and paths. Repository status remained `indexed`.
+
+5. **Final Regression Checks:**
+   - [x] Backend test suite: 49 / 49 tests passing (`pytest backend/tests`).
+   - [x] Database migration check: Alembic at head `4d8f20f42fa2`.
+   - [x] TypeScript validation: 0 errors (`npx tsc --noEmit`).
+   - [x] Frontend lint: 0 errors (`npm run lint`).
+   - [x] Production build: 11 / 11 routes built successfully (`npm run build`).
+   - [x] User data, chat history, and database integrity fully preserved.
+
+
 
 
 

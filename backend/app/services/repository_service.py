@@ -19,7 +19,7 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-BATCH_SIZE = 25
+BATCH_SIZE = 15
 
 async def generate_repository_summary(repo_id: uuid.UUID):
     async with AsyncSessionLocal() as db:
@@ -39,7 +39,8 @@ async def generate_repository_summary(repo_id: uuid.UUID):
         key_files = {"package.json", "requirements.txt", "pyproject.toml", "README.md", "docker-compose.yml"}
         for f in files:
             if f.path.split("/")[-1] in key_files:
-                config_contents += f"\n\n--- {f.path} ---\n{f.content[:2000]}"
+                file_text = (f.content or "")[:2000]
+                config_contents += f"\n\n--- {f.path} ---\n{file_text}"
                 
         prompt = f"""You are an expert software architect. Provide a high-level summary of the following repository.
         
@@ -240,6 +241,8 @@ async def generate_embeddings_for_repo(repo_id: uuid.UUID, max_chunks: Optional[
                 # Commit progress per batch so partial progress is saved safely
                 await db.commit()
                 logger.info(f"Embedded {chunks_processed}/{total_to_process} chunks for repo {repo_id}.")
+                if i + BATCH_SIZE < total_to_process:
+                    await asyncio.sleep(4)
                 
             # 3. Double-check readiness and invariant
             readiness = await get_repository_readiness(db, repo)

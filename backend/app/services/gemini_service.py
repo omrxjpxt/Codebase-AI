@@ -127,8 +127,8 @@ class GeminiService:
         )
 
     @retry(
-        wait=wait_exponential(multiplier=1, min=1, max=8),
-        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=2, min=15, max=75),
+        stop=stop_after_attempt(10),
         retry=retry_if_exception(is_retryable_gemini_error),
         reraise=True
     )
