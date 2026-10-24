@@ -2,6 +2,7 @@ import uuid
 import time
 import logging
 import asyncio
+from typing import Optional
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
@@ -71,7 +72,7 @@ Please output a comprehensive Markdown summary including:
             logger.error(f"Failed to generate summary for repo {repo_id}: {e}")
             await db.rollback()
 
-async def generate_embeddings_for_repo(repo_id: uuid.UUID):
+async def generate_embeddings_for_repo(repo_id: uuid.UUID, max_chunks: Optional[int] = None):
     async with AsyncSessionLocal() as db:
         start_time = time.time()
         
@@ -84,12 +85,14 @@ async def generate_embeddings_for_repo(repo_id: uuid.UUID):
             logger.error(f"Cannot generate embeddings: Repository {repo_id} not found.")
             return
             
-        repo.status = "indexing"
-        repo.error_message = None
-        await db.commit()
+        previous_status = repo.status
+        if max_chunks is None:
+            repo.status = "indexing"
+            repo.error_message = None
+            await db.commit()
         
         try:
-            # 2. Get all chunks for this repo that don't have embeddings from the active model yet
+            # 2. Get chunks for this repo that don't have embeddings from the active model yet
             chunk_stmt = (
                 select(Chunk)
                 .where(
@@ -98,6 +101,9 @@ async def generate_embeddings_for_repo(repo_id: uuid.UUID):
                 )
                 .order_by(Chunk.id)
             )
+            if max_chunks is not None and max_chunks > 0:
+                chunk_stmt = chunk_stmt.limit(max_chunks)
+
             chunk_results = await db.execute(chunk_stmt)
             chunks = list(chunk_results.scalars().all())
             
@@ -127,7 +133,7 @@ async def generate_embeddings_for_repo(repo_id: uuid.UUID):
 
             chunks_processed = 0
             total_to_process = len(chunks)
-            logger.info(f"Starting batch embedding generation for repo {repo_id}: {total_to_process} chunks to embed.")
+            logger.info(f"Starting batch embedding generation for repo {repo_id}: {total_to_process} chunks to embed (bounded={max_chunks is not None}).")
 
             for i in range(0, total_to_process, BATCH_SIZE):
                 batch = chunks[i:i + BATCH_SIZE]
@@ -164,6 +170,12 @@ async def generate_embeddings_for_repo(repo_id: uuid.UUID):
             remaining_unembedded = (await db.execute(unembedded_check)).scalar() or 0
             
             if remaining_unembedded > 0:
+                if max_chunks is not None:
+                    # Bounded smoke test: preserve status and do NOT mark indexed prematurely
+                    logger.info(f"Bounded indexing for repo {repo_id} complete: embedded {chunks_processed} chunks. {remaining_unembedded} chunks remain unembedded.")
+                    repo.status = previous_status
+                    await db.commit()
+                    return
                 raise ValueError(f"Indexing incomplete: {remaining_unembedded} chunks lack valid {settings.EMBEDDING_MODEL} embeddings.")
                 
             duration = time.time() - start_time
