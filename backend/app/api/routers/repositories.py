@@ -21,7 +21,7 @@ from app.schemas.chat import AskRequest, AskResponse
 from google import genai
 from app.core.config import settings
 from app.api.dependencies import get_current_user
-from app.services.repository_service import process_and_store_repository, generate_embeddings_for_repo
+from app.services.repository_service import process_and_store_repository, generate_embeddings_for_repo, get_repository_readiness
 from app.services.retrieval_service import retrieve_relevant_chunks
 
 router = APIRouter(prefix="/repositories", tags=["repositories"])
@@ -104,7 +104,28 @@ async def list_repositories(
 ):
     stmt = select(Repository).where(Repository.user_id == current_user.id)
     result = await db.execute(stmt)
-    return result.scalars().all()
+    repos = result.scalars().all()
+    
+    response_list = []
+    for repo in repos:
+        readiness = await get_repository_readiness(db, repo)
+        file_count_stmt = select(func.count()).select_from(DBFile).where(DBFile.repository_id == repo.id)
+        file_count = (await db.execute(file_count_stmt)).scalar() or 0
+        response_list.append({
+            "id": repo.id,
+            "name": repo.name,
+            "github_url": repo.github_url,
+            "user_id": repo.user_id,
+            "status": readiness["status"],
+            "error_message": repo.error_message,
+            "summary": repo.summary,
+            "upload_date": repo.upload_date,
+            "file_count": file_count,
+            "chunk_count": readiness["total_chunks"],
+            "indexed_chunk_count": readiness["indexed_chunks"],
+            "is_indexed": readiness["is_indexed"],
+        })
+    return response_list
 
 async def get_repository_model_or_404(
     id: uuid.UUID,
@@ -125,14 +146,11 @@ async def get_repository(
     db: AsyncSession = Depends(get_db)
 ):
     repo = await get_repository_model_or_404(id, current_user.id, db)
+    readiness = await get_repository_readiness(db, repo)
     
     # Get file count
     file_count_stmt = select(func.count()).select_from(DBFile).where(DBFile.repository_id == id)
     file_count = (await db.execute(file_count_stmt)).scalar() or 0
-    
-    # Get chunk count
-    chunk_count_stmt = select(func.count()).select_from(Chunk).where(Chunk.repository_id == id)
-    chunk_count = (await db.execute(chunk_count_stmt)).scalar() or 0
     
     # Get languages
     lang_stmt = select(DBFile.language).where(DBFile.repository_id == id).distinct()
@@ -144,12 +162,14 @@ async def get_repository(
         "name": repo.name,
         "github_url": repo.github_url,
         "user_id": repo.user_id,
-        "status": repo.status,
+        "status": readiness["status"],
         "error_message": repo.error_message,
         "summary": repo.summary,
         "upload_date": repo.upload_date,
         "file_count": file_count,
-        "chunk_count": chunk_count,
+        "chunk_count": readiness["total_chunks"],
+        "indexed_chunk_count": readiness["indexed_chunks"],
+        "is_indexed": readiness["is_indexed"],
         "languages": languages
     }
 
@@ -225,9 +245,14 @@ async def reindex_repository(
             detail="Repository is currently being indexed. Please wait until indexing completes."
         )
         
-    update_stmt = select(Chunk).where(Chunk.repository_id == id)
-    chunks_result = await db.execute(update_stmt)
-    for chunk in chunks_result.scalars():
+    # Preserve valid active-model embeddings! Only reset chunks with stale or incompatible models
+    stale_stmt = select(Chunk).where(
+        Chunk.repository_id == id,
+        Chunk.embedding.isnot(None),
+        Chunk.embedding_model != settings.EMBEDDING_MODEL
+    )
+    stale_result = await db.execute(stale_stmt)
+    for chunk in stale_result.scalars():
         chunk.embedding = None
         chunk.embedding_model = None
         chunk.embedding_created_at = None
@@ -238,8 +263,24 @@ async def reindex_repository(
     
     asyncio.create_task(generate_embeddings_for_repo(repo.id))
     
-    await db.refresh(repo)
-    return repo
+    file_count_stmt = select(func.count()).select_from(DBFile).where(DBFile.repository_id == id)
+    file_count = (await db.execute(file_count_stmt)).scalar() or 0
+    readiness = await get_repository_readiness(db, repo)
+    
+    return {
+        "id": repo.id,
+        "name": repo.name,
+        "github_url": repo.github_url,
+        "user_id": repo.user_id,
+        "status": "indexing",
+        "error_message": repo.error_message,
+        "summary": repo.summary,
+        "upload_date": repo.upload_date,
+        "file_count": file_count,
+        "chunk_count": readiness["total_chunks"],
+        "indexed_chunk_count": readiness["indexed_chunks"],
+        "is_indexed": False,
+    }
 
 
 @router.post("/{id}/generate-summary", response_model=RepositoryResponse)
@@ -269,7 +310,7 @@ async def ask_repository_question(
     # Verify ownership
     repo = await get_repository_model_or_404(id, current_user.id, db)
     
-    if repo.status in ("pending", "indexing"):
+    if repo.status in ("pending", "processing", "indexing"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Repository is currently indexing. Please wait until indexing completes."
@@ -280,15 +321,26 @@ async def ask_repository_question(
             detail=f"Repository indexing failed: {repo.error_message or 'Unknown error'}. Please re-index."
         )
         
+    readiness = await get_repository_readiness(db, repo)
+    if readiness["indexed_chunks"] == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Repository has not been indexed yet. Please trigger indexing before asking questions."
+        )
+        
     sources_data = await retrieve_relevant_chunks(db, id, request.question, top_k=8)
     
     file_paths = list(set([source['path'] for source in sources_data]))
     chunks_text = "\n\n".join([f"--- File: {s['path']} ---\n{s['content']}" for s in sources_data])
     
+    indexing_notice = ""
+    if not readiness["is_indexed"]:
+        indexing_notice = f"\nNote: Codebase is partially indexed ({readiness['indexed_chunks']}/{readiness['total_chunks']} chunks). Context is limited to indexed code."
+
     prompt = f"""You are a senior software engineer helping a developer understand a codebase.
 
 Repository:
-{repo.name}
+{repo.name} ({readiness['indexed_chunks']}/{readiness['total_chunks']} chunks indexed){indexing_notice}
 
 Relevant Files:
 {', '.join(file_paths) if file_paths else 'No matching code files found.'}

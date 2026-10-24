@@ -9,9 +9,11 @@ interface RepositoryCardProps {
 
 const statusConfig: Record<string, { label: string; color: string; dot: string }> = {
   indexed: { label: "Indexed", color: "text-emerald-400", dot: "bg-emerald-400" },
-  completed: { label: "Indexed", color: "text-emerald-400", dot: "bg-emerald-400" },
+  partially_indexed: { label: "Partially Indexed", color: "text-amber-400", dot: "bg-amber-400" },
   indexing: { label: "Indexing", color: "text-blue-400", dot: "bg-blue-400" },
-  pending: { label: "Pending", color: "text-amber-400", dot: "bg-amber-400" },
+  completed: { label: "Ingested", color: "text-yellow-400", dot: "bg-yellow-400" },
+  processing: { label: "Processing", color: "text-blue-400", dot: "bg-blue-400" },
+  pending: { label: "Pending", color: "text-zinc-400", dot: "bg-zinc-400" },
   failed: { label: "Failed", color: "text-red-400", dot: "bg-red-400" },
 };
 
@@ -20,6 +22,9 @@ export default function RepositoryCard({ repo }: RepositoryCardProps) {
 
   // Calculate generic date display or specific format
   const dateStr = new Date(repo.upload_date).toLocaleDateString();
+  const statusLabel = (repo.status === "partially_indexed" && repo.chunk_count !== undefined && repo.indexed_chunk_count !== undefined)
+    ? `Partially Indexed (${repo.indexed_chunk_count}/${repo.chunk_count})`
+    : status.label;
 
   return (
     <Link href={`/repository/${repo.id}`}>
@@ -50,7 +55,7 @@ export default function RepositoryCard({ repo }: RepositoryCardProps) {
               title={repo.status === "failed" && repo.error_message ? repo.error_message : undefined}
             >
               <span className={cn("w-1.5 h-1.5 rounded-full inline-block", status.dot)} />
-              {status.label}
+              {statusLabel}
               {repo.status === "failed" && repo.error_message && (
                 <span className="ml-1 text-[11px] truncate max-w-[200px] opacity-80" title={repo.error_message}>
                   - {repo.error_message}

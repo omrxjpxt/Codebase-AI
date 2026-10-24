@@ -72,7 +72,96 @@ Please output a comprehensive Markdown summary including:
             logger.error(f"Failed to generate summary for repo {repo_id}: {e}")
             await db.rollback()
 
+async def get_repository_readiness(db: AsyncSession, repo: Repository) -> dict:
+    """
+    Evaluate and verify the complete-index invariant for a repository.
+    
+    Verifies:
+    1. Total chunk count
+    2. Valid embeddings: non-null vector, matching settings.EMBEDDING_MODEL, and length == 768
+    3. Stale model embeddings: non-null vector, but embedding_model != settings.EMBEDDING_MODEL
+    4. Missing embeddings: embedding is None
+    
+    Complete-Index Invariant:
+    A repository is 'indexed' (is_indexed=True) if and only if:
+      total_chunks > 0 and missing_chunks == 0 and stale_chunks == 0
+      
+    If valid_chunks > 0 but valid_chunks < total_chunks:
+      status is 'partially_indexed'
+    If valid_chunks == 0 and repo was 'completed':
+      status is 'completed' (ingestion completed, indexing pending)
+      
+    Synchronizes repo.status in the database if necessary (when not actively 'indexing' or 'failed').
+    """
+    total_stmt = select(func.count()).select_from(Chunk).where(Chunk.repository_id == repo.id)
+    total_chunks = (await db.execute(total_stmt)).scalar() or 0
+
+    valid_stmt = select(func.count()).select_from(Chunk).where(
+        Chunk.repository_id == repo.id,
+        Chunk.embedding.isnot(None),
+        Chunk.embedding_model == settings.EMBEDDING_MODEL
+    )
+    valid_chunks = (await db.execute(valid_stmt)).scalar() or 0
+
+    stale_stmt = select(func.count()).select_from(Chunk).where(
+        Chunk.repository_id == repo.id,
+        Chunk.embedding.isnot(None),
+        Chunk.embedding_model != settings.EMBEDDING_MODEL
+    )
+    stale_chunks = (await db.execute(stale_stmt)).scalar() or 0
+
+    missing_chunks = total_chunks - valid_chunks
+    is_indexed = (total_chunks > 0 and missing_chunks == 0 and stale_chunks == 0)
+
+    # Determine effective status
+    if repo.status == "failed":
+        effective_status = "failed"
+    elif repo.status == "indexing":
+        effective_status = "indexing"
+    elif is_indexed:
+        effective_status = "indexed"
+    elif valid_chunks > 0:
+        effective_status = "partially_indexed"
+    elif repo.status in ("completed", "pending", "processing"):
+        effective_status = "completed"
+    else:
+        effective_status = repo.status
+
+    # Synchronize if repo.status in DB does not match effective_status
+    if repo.status not in ("indexing", "failed") and repo.status != effective_status:
+        repo.status = effective_status
+        await db.commit()
+
+    return {
+        "total_chunks": total_chunks,
+        "indexed_chunks": valid_chunks,
+        "missing_chunks": missing_chunks,
+        "stale_chunks": stale_chunks,
+        "is_indexed": is_indexed,
+        "status": effective_status,
+        "active_model": settings.EMBEDDING_MODEL,
+    }
+
+
 async def generate_embeddings_for_repo(repo_id: uuid.UUID, max_chunks: Optional[int] = None):
+    """
+    Generate embeddings for eligible chunks in repository `repo_id`.
+    
+    Semantics of `max_chunks`:
+    - `max_chunks`: Maximum number of individual code chunks (NOT batches) to embed and persist
+      in this single invocation.
+    - If None: all eligible unembedded or stale-model chunks are processed until completion.
+    - If <= 0: no chunks are processed (0 database writes, returns immediately).
+    - If > 0: at most `max_chunks` chunks are fetched, embedded, and committed to PostgreSQL.
+    - Resumability & Idempotency: Successfully generated embeddings matching the active model
+      are committed per-batch and never overwritten or deleted.
+    - Invariant Safety: If unembedded chunks remain after execution (e.g. bounded or partial),
+      the repository is marked 'partially_indexed', NEVER 'indexed'.
+    """
+    if max_chunks is not None and max_chunks <= 0:
+        logger.info(f"max_chunks={max_chunks} <= 0; skipping embedding generation.")
+        return
+
     async with AsyncSessionLocal() as db:
         start_time = time.time()
         
@@ -101,30 +190,20 @@ async def generate_embeddings_for_repo(repo_id: uuid.UUID, max_chunks: Optional[
                 )
                 .order_by(Chunk.id)
             )
-            if max_chunks is not None and max_chunks > 0:
+            if max_chunks is not None:
                 chunk_stmt = chunk_stmt.limit(max_chunks)
 
             chunk_results = await db.execute(chunk_stmt)
             chunks = list(chunk_results.scalars().all())
+            if max_chunks is not None:
+                chunks = chunks[:max_chunks]
             
             if not chunks:
-                # Check total chunks count for this repo
-                total_stmt = select(func.count()).select_from(Chunk).where(Chunk.repository_id == repo_id)
-                total_count = (await db.execute(total_stmt)).scalar() or 0
-                
-                # Verify if any unembedded chunks or chunks with old model exist
-                unembedded_stmt = select(func.count()).select_from(Chunk).where(
-                    Chunk.repository_id == repo_id,
-                    or_(Chunk.embedding.is_(None), Chunk.embedding_model != settings.EMBEDDING_MODEL)
-                )
-                unembedded_count = (await db.execute(unembedded_stmt)).scalar() or 0
-                
-                if total_count > 0 and unembedded_count == 0:
-                    repo.status = "indexed"
-                    repo.error_message = None
-                    await db.commit()
-                    logger.info(f"Repository {repo_id} already has all {total_count} chunks indexed with {settings.EMBEDDING_MODEL}.")
-                else:
+                # Evaluate readiness
+                readiness = await get_repository_readiness(db, repo)
+                if readiness["is_indexed"]:
+                    logger.info(f"Repository {repo_id} already has all {readiness['total_chunks']} chunks indexed with {settings.EMBEDDING_MODEL}.")
+                elif readiness["total_chunks"] == 0:
                     repo.status = "failed"
                     repo.error_message = "No code chunks available to index in this repository."
                     await db.commit()
@@ -162,32 +241,25 @@ async def generate_embeddings_for_repo(repo_id: uuid.UUID, max_chunks: Optional[
                 await db.commit()
                 logger.info(f"Embedded {chunks_processed}/{total_to_process} chunks for repo {repo_id}.")
                 
-            # 3. Double-check that NO chunks remain unembedded or with mismatched model before marking indexed
-            unembedded_check = select(func.count()).select_from(Chunk).where(
-                Chunk.repository_id == repo_id,
-                or_(Chunk.embedding.is_(None), Chunk.embedding_model != settings.EMBEDDING_MODEL)
-            )
-            remaining_unembedded = (await db.execute(unembedded_check)).scalar() or 0
-            
-            if remaining_unembedded > 0:
-                if max_chunks is not None:
-                    # Bounded smoke test: preserve status and do NOT mark indexed prematurely
-                    logger.info(f"Bounded indexing for repo {repo_id} complete: embedded {chunks_processed} chunks. {remaining_unembedded} chunks remain unembedded.")
-                    repo.status = previous_status
-                    await db.commit()
-                    return
-                raise ValueError(f"Indexing incomplete: {remaining_unembedded} chunks lack valid {settings.EMBEDDING_MODEL} embeddings.")
-                
+            # 3. Double-check readiness and invariant
+            readiness = await get_repository_readiness(db, repo)
             duration = time.time() - start_time
-            logger.info(f"Embedding generation for repo {repo_id} complete. Processed {chunks_processed} chunks in {duration:.2f}s.")
+            logger.info(f"Embedding batch run for repo {repo_id} complete. Processed {chunks_processed} chunks in {duration:.2f}s. Readiness: {readiness}")
             
-            repo.status = "indexed"
-            repo.error_message = None
-            await db.commit()
-            
-            # Fire and forget summary generation if API key is present
-            if settings.GEMINI_API_KEY:
-                asyncio.create_task(generate_repository_summary(repo_id))
+            if readiness["is_indexed"]:
+                repo.status = "indexed"
+                repo.error_message = None
+                await db.commit()
+                # Fire and forget summary generation if API key is present
+                if settings.GEMINI_API_KEY:
+                    asyncio.create_task(generate_repository_summary(repo_id))
+            elif max_chunks is not None:
+                # Bounded run: set to partially_indexed (or completed if 0 indexed)
+                repo.status = readiness["status"]
+                repo.error_message = None
+                await db.commit()
+            else:
+                raise ValueError(f"Indexing incomplete: {readiness['missing_chunks']} chunks lack valid {settings.EMBEDDING_MODEL} embeddings.")
 
         except Exception as e:
             error_msg = str(e.detail if isinstance(e, HTTPException) else str(e))

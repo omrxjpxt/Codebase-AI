@@ -75,8 +75,12 @@ export default function AskAiModal({ isOpen, onClose, repositories, onUploadClic
                       {repo.name}
                     </span>
                     <span className="text-[11px] text-[var(--muted-text)] truncate mt-0.5 block" title={repo.status === "failed" && repo.error_message ? repo.error_message : undefined}>
-                      {repo.status === "indexed" || repo.status === "completed"
+                      {repo.status === "indexed"
                         ? "Ready for chat"
+                        : repo.status === "partially_indexed"
+                        ? `Partially indexed (${repo.indexed_chunk_count || 0}/${repo.chunk_count || 0} chunks)`
+                        : repo.status === "completed"
+                        ? "Ingested (Indexing pending)"
                         : repo.status === "failed"
                         ? `Failed${repo.error_message ? `: ${repo.error_message}` : ""}`
                         : "Indexing in progress..."}

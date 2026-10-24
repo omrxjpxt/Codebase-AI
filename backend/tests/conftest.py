@@ -125,6 +125,8 @@ async def test_repo(test_user_a):
             repository_id=repo.id,
             file_id=file_obj.id,
             content="def main():\n    return 'codebase-ai test'\n",
+            embedding=[0.05] * 768,
+            embedding_model=settings.EMBEDDING_MODEL,
             metadata_={
                 "chunk_index": 0,
                 "path": "src/main.py",

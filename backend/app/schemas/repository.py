@@ -17,10 +17,16 @@ class RepositoryResponse(RepositoryBase):
     error_message: Optional[str] = None
     summary: Optional[str] = None
     upload_date: datetime
+    file_count: Optional[int] = None
+    chunk_count: Optional[int] = None
+    indexed_chunk_count: Optional[int] = None
+    is_indexed: Optional[bool] = None
 
     model_config = ConfigDict(from_attributes=True)
 
 class RepositoryDetailResponse(RepositoryResponse):
     file_count: int
     chunk_count: int
+    indexed_chunk_count: int = 0
+    is_indexed: bool = False
     languages: list[str]

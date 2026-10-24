@@ -18,6 +18,8 @@ from app.services.retrieval_service import retrieve_relevant_chunks
 from google import genai
 from app.core.config import settings
 
+from app.services.repository_service import get_repository_readiness
+
 router = APIRouter(prefix="/repositories", tags=["chat"])
 
 class ChatSessionCreate(BaseModel):
@@ -175,7 +177,7 @@ async def ask_chat_session(
     if not repo:
         raise HTTPException(status_code=404, detail="Repository not found")
         
-    if repo.status in ("pending", "indexing"):
+    if repo.status in ("pending", "processing", "indexing"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Repository is currently indexing. Please wait until indexing completes before asking questions."
@@ -184,6 +186,13 @@ async def ask_chat_session(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Repository indexing failed: {repo.error_message or 'Unknown error'}. Please re-index the repository."
+        )
+        
+    readiness = await get_repository_readiness(db, repo)
+    if readiness["indexed_chunks"] == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Repository has not been indexed yet. Please trigger indexing before asking questions."
         )
     
     # Save user message
@@ -196,10 +205,14 @@ async def ask_chat_session(
     file_paths = list(set([s['path'] for s in sources_data]))
     chunks_text = "\n\n".join([f"--- File: {s['path']} ---\n{s['content']}" for s in sources_data])
     
+    indexing_notice = ""
+    if not readiness["is_indexed"]:
+        indexing_notice = f"\nNote: Codebase is partially indexed ({readiness['indexed_chunks']}/{readiness['total_chunks']} chunks). Context is limited to indexed code."
+
     prompt = f"""You are a senior software engineer helping a developer understand a codebase.
 
 Repository:
-{repo.name}
+{repo.name} ({readiness['indexed_chunks']}/{readiness['total_chunks']} chunks indexed){indexing_notice}
 
 Relevant Files:
 {', '.join(file_paths) if file_paths else 'No matching code files found.'}
@@ -221,6 +234,16 @@ Provide:
     
     async def generate():
         try:
+            if not readiness["is_indexed"]:
+                yield json.dumps({
+                    "type": "readiness",
+                    "data": {
+                        "is_indexed": False,
+                        "indexed_chunks": readiness["indexed_chunks"],
+                        "total_chunks": readiness["total_chunks"]
+                    }
+                }) + "\n"
+
             response_stream = gemini_service.generate_content_stream(
                 model=settings.CHAT_MODEL,
                 contents=prompt,

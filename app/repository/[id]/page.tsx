@@ -27,6 +27,16 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+const statusBadgeConfig: Record<string, { label: string; bg: string; text: string; border: string }> = {
+  indexed: { label: "Indexed", bg: "bg-emerald-950/60", text: "text-emerald-400", border: "border-emerald-900/60" },
+  partially_indexed: { label: "Partially Indexed", bg: "bg-amber-950/60", text: "text-amber-400", border: "border-amber-900/60" },
+  completed: { label: "Ingested", bg: "bg-yellow-950/60", text: "text-yellow-400", border: "border-yellow-900/60" },
+  indexing: { label: "Indexing...", bg: "bg-blue-950/60", text: "text-blue-400", border: "border-blue-900/60" },
+  pending: { label: "Pending", bg: "bg-zinc-900", text: "text-zinc-400", border: "border-zinc-800" },
+  processing: { label: "Processing", bg: "bg-blue-950/60", text: "text-blue-400", border: "border-blue-900/60" },
+  failed: { label: "Failed", bg: "bg-red-950/60", text: "text-red-400", border: "border-red-900/60" },
+};
+
 export default function RepositoryPage({ params }: PageProps) {
   const { id } = use(params);
   const router = useRouter();
@@ -106,6 +116,21 @@ export default function RepositoryPage({ params }: PageProps) {
       }
     };
   }, [id, router]);
+
+  // Polling while repository is actively indexing or processing
+  useEffect(() => {
+    if (repo?.status === "indexing" || repo?.status === "processing" || repo?.status === "pending") {
+      const interval = setInterval(async () => {
+        try {
+          const updatedRepo = await fetchApi(`/repositories/${id}`);
+          setRepo(updatedRepo);
+        } catch (e) {
+          console.error("Polling repository status failed", e);
+        }
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [repo?.status, id]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -239,6 +264,15 @@ export default function RepositoryPage({ params }: PageProps) {
               setMessages(prev => prev.map(m => 
                 m.id === aiMsgId ? { ...m, sources: data.data } : m
               ));
+            } else if (data.type === "readiness") {
+              if (data.data) {
+                setRepo(prev => prev ? {
+                  ...prev,
+                  indexed_chunk_count: data.data.indexed_chunks,
+                  chunk_count: data.data.total_chunks,
+                  is_indexed: data.data.is_indexed
+                } : prev);
+              }
             } else if (data.type === "chunk") {
               setMessages(prev => prev.map(m => 
                 m.id === aiMsgId ? { ...m, content: m.content + data.text } : m
@@ -308,6 +342,15 @@ export default function RepositoryPage({ params }: PageProps) {
   };
 
   const dateStr = new Date(repo.upload_date).toLocaleDateString();
+  const badge = statusBadgeConfig[repo.status] || {
+    label: repo.status,
+    bg: "bg-zinc-900",
+    text: "text-zinc-400",
+    border: "border-zinc-800"
+  };
+  const badgeLabel = (repo.status === "partially_indexed" && repo.chunk_count && repo.indexed_chunk_count !== undefined)
+    ? `Partially Indexed (${repo.indexed_chunk_count}/${repo.chunk_count})`
+    : badge.label;
 
   return (
     <div className="flex h-screen bg-[var(--background)] overflow-hidden">
@@ -335,8 +378,9 @@ export default function RepositoryPage({ params }: PageProps) {
                   <span className="text-[var(--placeholder-text)]">•</span>
                 </>
               )}
-              <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 text-[11px] font-medium border border-emerald-900 capitalize">
-                {repo.status}
+              <span className={`px-2 py-0.5 rounded-full ${badge.bg} ${badge.text} text-[11px] font-medium border ${badge.border} flex items-center gap-1.5`}>
+                {repo.status === "indexing" && <Loader2 size={10} className="animate-spin" />}
+                {badgeLabel}
               </span>
               <span className="text-[var(--placeholder-text)]">•</span>
               {repo.languages && repo.languages.length > 0 && (
@@ -356,12 +400,41 @@ export default function RepositoryPage({ params }: PageProps) {
             )}
             <button 
               onClick={handleReindex}
-              className="px-3 py-1.5 rounded-[8px] border border-[var(--border)] text-[var(--secondary-text)] text-[12px] hover:text-[var(--primary-text)] hover:bg-[var(--surface)] transition-all mr-2"
+              disabled={repo.status === "indexing"}
+              className="px-3 py-1.5 rounded-[8px] border border-[var(--border)] text-[var(--secondary-text)] text-[12px] hover:text-[var(--primary-text)] hover:bg-[var(--surface)] transition-all mr-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Re-index
+              {repo.status === "indexing" ? "Indexing..." : "Re-index"}
             </button>
           </div>
         </header>
+
+        {/* Readiness notice banners */}
+        {repo.status === "partially_indexed" && (
+          <div className="bg-amber-950/40 border-b border-amber-900/50 px-6 py-2 flex items-center justify-between text-[12px] text-amber-300 flex-shrink-0">
+            <span>
+              ⚠️ <strong>Partially Indexed:</strong> Only {repo.indexed_chunk_count || 0} of {repo.chunk_count || 0} code chunks are embedded. AI responses are grounded only in the indexed portions.
+            </span>
+            <button
+              onClick={handleReindex}
+              className="underline hover:text-amber-200 font-medium ml-4 transition-colors"
+            >
+              Resume Indexing
+            </button>
+          </div>
+        )}
+        {repo.status === "completed" && (
+          <div className="bg-yellow-950/40 border-b border-yellow-900/50 px-6 py-2 flex items-center justify-between text-[12px] text-yellow-300 flex-shrink-0">
+            <span>
+              ℹ️ <strong>Ingestion Complete:</strong> Repository files are stored, but code embeddings have not been generated yet ({repo.chunk_count || 0} chunks pending).
+            </span>
+            <button
+              onClick={handleReindex}
+              className="underline hover:text-yellow-200 font-medium ml-4 transition-colors"
+            >
+              Start Indexing
+            </button>
+          </div>
+        )}
 
         {/* Main Content Area */}
         <div className="flex flex-1 overflow-hidden">

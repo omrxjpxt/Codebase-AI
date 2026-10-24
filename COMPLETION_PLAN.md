@@ -262,5 +262,72 @@ Successfully verified live AI services with real Google Gemini API calls, persis
    - Estimated API requests: 42 batches (at 10 chunks/call).
    - Rate limit pacing: 15 RPM on Google AI Studio free tier implies ~3-4 minutes runtime for a full reindex. Full indexing can be triggered via standard production workflow.
 
+---
+
+## Phase 5.1: Indexing Boundaries, Status Correctness & Full-Index Readiness (COMPLETED)
+
+### Status: COMPLETED
+Successfully audited the indexing limit discrepancy, formalized `max_chunks` semantics, hardened the complete-index invariant, corrected repository readiness reporting across backend and frontend, and verified local database integrity:
+
+1. **Indexing Limit Discrepancy Root Cause & Fix:**
+   - **Root Cause:** In Phase 5, the smoke test script (`scratch_smoke_test.py`) was invoked twice. In the first invocation at 09:56:43 UTC, `generate_embeddings_for_repo(repo_id, max_chunks=5)` selected the first 5 unembedded chunks (`limit(5)`), embedded them, and committed them to PostgreSQL. The script then failed on an assertion key (`KeyError: 'distance'`). The script was rerun at 09:58:23 UTC. On the second run, the query selected the *next 5 unembedded chunks* (`where(embedding.is_(None)).limit(5)`), successfully embedding 5 more chunks. Each invocation strictly adhered to `max_chunks=5`, resulting in 5 + 5 = 10 total embeddings committed.
+   - **Fix & Strict Limit Enforcement:**
+     - Parameter semantics formalized: `max_chunks` strictly specifies the maximum number of individual code chunks (not batches) to fetch, embed, and write to PostgreSQL in a single invocation.
+     - Added parameter guard: `max_chunks <= 0` immediately returns with 0 database writes and 0 API calls.
+     - Added double-layer limit enforcement: both database query level (`.limit(max_chunks)`) and list slice level (`chunks = chunks[:max_chunks]`).
+     - Added regression tests verifying exact database writes under `max_chunks=N` and `max_chunks=0`.
+
+2. **Repository Indexing Status Semantics & State Machine:**
+   - **Distinction Clarified:**
+     - Archive Ingestion: `processing` -> `completed` (legacy: files and chunks extracted and committed to database).
+     - AI Indexing: `indexing` (active background task) -> `partially_indexed` (some chunks embedded, unembedded/stale chunks remain) -> `indexed` (complete-index invariant satisfied).
+     - Failures: `failed` with descriptive `error_message`.
+   - **Complete-Index Invariant Implemented (`get_repository_readiness`):**
+     - A repository is reported as `indexed` if and only if `total_chunks > 0`, `missing_chunks == 0`, `stale_chunks == 0`, and all non-null vectors have length 768.
+     - Stale or incompatible models (e.g. legacy `text-embedding-004`) are treated as unindexed and will not satisfy the invariant.
+     - Synchronizes `Repository.status` dynamically so database records honestly reflect AI readiness.
+   - **Honest Q&A & Chat Handling:**
+     - Completely unindexed repositories (`indexed_chunks == 0`): `/ask` and `/chat-sessions/{id}/ask` reject with HTTP 400 stating indexing is required.
+     - Partially indexed repositories: allowed to query indexed files safely, with explicit prompt grounding notice: `"Note: Codebase is partially indexed (X/Y chunks). Context is limited to indexed code."`
+     - Streaming responses yield readiness events informing the client.
+   - **Resumable Reindexing:**
+     - `POST /repositories/{id}/reindex` preserves existing valid `gemini-embedding-2` vectors! Only chunks with stale/incompatible models or null embeddings are queued for embedding.
+   - **Frontend Readiness & Status Badges:**
+     - `RepositoryCard.tsx`: Mapped `partially_indexed` to amber with `Partially Indexed (10/430)` progress text, and `completed` to yellow `Ingested` (no longer misleadingly shown as green "Indexed").
+     - `AskAiModal.tsx`: Explicitly displays `Partially indexed (10/430 chunks)` and `Ingested (Indexing pending)` rather than `Ready for chat`.
+     - `app/repository/[id]/page.tsx`: Status badge dynamically styled by state (green for indexed, amber for partially indexed, blue with spinner for indexing, yellow for ingested); renders informative alert banner for partially indexed repositories with a "Resume Indexing" button; auto-polls repository status every 3s while indexing is active.
+
+3. **Database Audit & Verification:**
+   - Verified real local database without deleting or resetting any user data:
+     - Users: 1 (`omgangster9@gmail.com`)
+     - Repositories: 1 (`samay-main`, ID: `526d46c2-b602-4541-a799-64ee1a5c422e`)
+     - Files: 42
+     - Total chunks: 430
+     - Valid `gemini-embedding-2` vectors: 10 (all 768-dimensional, non-null, valid float vectors preserved)
+     - Missing embeddings: 420
+     - Stale model vectors: 0
+     - Chat sessions: 3, Messages: 4 (with persisted citations intact)
+     - Repository status updated: `samay-main` status is `partially_indexed` (honest representation of AI readiness).
+
+4. **API Quota & Full-Index Workload Analysis:**
+   - **Verified API Quota Behavior:** Inspected `google-genai` SDK and HTTP responses. The Gemini Developer API does not return rate limit or quota headers in HTTP responses; quota limits are managed in Google AI Studio.
+   - **Remaining Workload Estimation:**
+     - Remaining chunks: 420 chunks.
+     - Batch size: 10 chunks per API call (`BATCH_SIZE = 10` or `25`).
+     - At 10 chunks/batch: 42 API requests total.
+     - Free tier pacing (15 RPM): requires ~3-4 minutes runtime with exponential backoff on transient 429 errors.
+     - Pay-as-you-go tier (1,500+ RPM): requires ~15-30 seconds.
+     - Safe resume: Each batch commits immediately upon return. Transient network drops or rate limit timeouts do not lose progress; restarting resumes from the next unembedded chunk.
+     - Full indexing was intentionally **not** run in this phase.
+
+5. **Test & Build Verification Results:**
+   - [x] Backend test suite: 49 / 49 tests passing in 9.08s (`pytest backend/tests`).
+   - [x] Database migration check: Alembic at head `4d8f20f42fa2`.
+   - [x] TypeScript validation: 0 errors (`npx tsc --noEmit`).
+   - [x] Frontend lint: 0 errors (`npm run lint`).
+   - [x] Production build: 11 / 11 routes built successfully (`npm run build`).
+   - [x] No secrets logged; no git resets or history rewrites; existing database records preserved.
+
+
 
 

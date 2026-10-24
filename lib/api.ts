@@ -19,17 +19,22 @@ export interface Repository {
   id: string;
   user_id: string;
   name: string;
-  status: string; // "pending", "indexing", "indexed", "failed"
+  status: string; // "pending", "processing", "completed", "indexing", "partially_indexed", "indexed", "failed"
   error_message?: string;
   summary?: string | null;
   upload_date: string;
   github_url: string | null;
-  file_count?: number; // Might need to compute this based on backend response
+  file_count?: number;
+  chunk_count?: number;
+  indexed_chunk_count?: number;
+  is_indexed?: boolean;
 }
 
 export interface RepositoryDetail extends Repository {
   file_count: number;
   chunk_count: number;
+  indexed_chunk_count?: number;
+  is_indexed?: boolean;
   languages: string[];
 }
 
