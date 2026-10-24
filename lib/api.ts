@@ -279,3 +279,103 @@ export async function analyzeChangeImpact(
     body: JSON.stringify(request),
   });
 }
+
+export interface ChangeSetSummary {
+  changed_files_count: number;
+  direct_dependents_count: number;
+  transitive_dependents_count: number;
+  total_blast_radius: number;
+  suggested_tests_count: number;
+  unresolved_count: number;
+}
+
+export interface ChangedFileDetail {
+  path: string;
+  change_type: "modified" | "added" | "deleted" | "renamed";
+  changed_symbols: string[];
+  modified_lines_count: number;
+  is_public_api_modified: boolean;
+  diff_snippet?: string | null;
+}
+
+export interface RiskFactor {
+  factor: string;
+  points: number;
+  reason: string;
+}
+
+export interface RiskPrioritization {
+  risk_level: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  score: number;
+  factors: RiskFactor[];
+  summary_headline: string;
+}
+
+export interface MergedCausalLink {
+  changed_file: string;
+  changed_symbols: string[];
+  relationship: "direct" | "transitive";
+  depth: number;
+  import_line: number;
+}
+
+export interface MergedDependentFile {
+  path: string;
+  file_id?: string;
+  relationship: "direct" | "transitive";
+  min_depth: number;
+  caused_by: MergedCausalLink[];
+  imported_symbols: string[];
+  import_lines: number[];
+  dependency_path: string[];
+}
+
+export interface SuggestedTest {
+  path: string;
+  reason: string;
+  status: string;
+}
+
+export interface AiChangeSetExplanation {
+  summary: string;
+  breaking_risks: string[];
+  component_impacts: Array<{
+    component: string;
+    risk: string;
+  }>;
+  verification_checklist: string[];
+}
+
+export interface ChangeSetAnalysisResponse {
+  repository_id: string;
+  summary: ChangeSetSummary;
+  risk_prioritization: RiskPrioritization;
+  changed_files: ChangedFileDetail[];
+  merged_dependents: MergedDependentFile[];
+  suggested_tests: SuggestedTest[];
+  unresolved_dependencies: UnresolvedDependency[];
+  ai_explanation?: AiChangeSetExplanation | null;
+  limitations: string[];
+}
+
+export interface ChangeSetAnalysisRequest {
+  diff_text?: string;
+  changed_files?: Array<{
+    path: string;
+    change_type?: string;
+    symbols?: string[];
+  }>;
+  max_depth?: number;
+  include_ai_explanation?: boolean;
+}
+
+export async function analyzeChangeSetImpact(
+  repositoryId: string,
+  request: ChangeSetAnalysisRequest
+): Promise<ChangeSetAnalysisResponse> {
+  return await fetchApi(`/repositories/${repositoryId}/change-set-impact`, {
+    method: "POST",
+    body: JSON.stringify(request),
+  });
+}
+

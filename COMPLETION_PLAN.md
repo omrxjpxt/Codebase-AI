@@ -433,6 +433,74 @@ Built and verified an evidence-based Change Impact Analysis engine providing dif
    - [x] Production build: 11 / 11 routes built successfully (`npm run build`).
    - [x] All existing chat, vector retrieval, and indexing features intact.
 
+---
+
+## Phase 7: Git Diff Blast Radius Analysis MVP (COMPLETED)
+
+### Status: COMPLETED
+Extended the Phase 6 Change Impact Analysis capability into a practical developer workflow for proposed change sets. Supported unified diffs and explicit changed file/symbol inputs, deduplicated multi-file dependent trees, computed explainable deterministic risk prioritizations, generated grounded Gemini-3.8-Flash explanations, and integrated an "Analyze Changes" modal workflow into the repository interface:
+
+1. **Input Formats & Validation:**
+   - **Unified Git Diffs:** Standard unified diffs (from `git diff`, GitHub PR patch, or pasted diffs) up to 500 KB and bounded to 50 changed files.
+   - **Explicit Changed Files:** Developer-specified list of changed file paths, change types (`modified`, `added`, `deleted`, `renamed`), and optional changed symbols.
+   - **Validation & Boundaries:** Bounded payload size (500 KB limit, HTTP 413 on overflow), empty change set rejection (HTTP 400), strict repository ownership authorization (HTTP 404 on cross-user IDOR attempt), path normalization (`a/`, `b/`, repo-prefix stripping), and bounded traversal depth (1 to 5, default 3).
+   - **Explicit Change Types:** Added, deleted, modified, and renamed files handled without inventing missing before/after source content. Deletions mark exported symbols as removed; additions preserve new files as roots without failing traversal.
+
+2. **AST Declaration Tracking & Symbol Change Detection:**
+   - Enhanced `ts_ast_parser.js` to record declaration line spans (`start_line`, `end_line`, `is_exported`) for functions, classes, interfaces, types, and variables.
+   - Enhanced Python and fallback parsers with declaration spans.
+   - Correlated modified/deleted diff line ranges and hunk identifiers with AST declarations. When a diff touches a declaration header or body, the enclosing symbol is extracted.
+   - Graceful fallback: If only file paths are supplied without diff hunks, file-level impact analysis is performed with an explicit limitation note indicating symbol-level change detection was unavailable.
+
+3. **Multi-File Merged Blast Radius Engine:**
+   - Evaluated dependents across all changed files in the proposed change set.
+   - **Merged Deduplication:** Dependent files imported by multiple changed files appear exactly once in the combined impact set (`merged_dependents`).
+   - **Causality Retention:** Each affected file retains distinct `caused_by` records linking it to each root change, recording the triggering file, imported symbols, relationship (`direct` vs `transitive`), depth, and import line.
+   - **Cycle-Safe BFS:** Visited set prevents infinite recursion and handles mutual dependency cycles (`A <-> B`).
+   - **Suggested Tests Discovery:** AST traversal identifies downstream test suites and badges them with *"Suggested (Not Executed)"* status.
+
+4. **Transparent, Deterministic Risk Prioritization:**
+   - Implemented explainable scoring (0-100) and classification (`CRITICAL`, `HIGH`, `MEDIUM`, `LOW`):
+     - **Direct Blast Radius Size:** +10 (1-2 files), +25 (3-7 files), +40 (8+ files).
+     - **Transitive Propagation:** +5 per transitive dependent (capped at +20).
+     - **Exported Contract Modification:** +25 if public APIs, exported types, or deleted files are touched.
+     - **Application Entry Points:** +20 if Next.js pages (`pages/`, `app/`), API routes (`pages/api/`, `app/api/`), or main routers are affected.
+     - **Test Coverage Gap:** +15 if no existing test suites exercise the blast radius (-10 bonus if tests exist).
+     - **Unresolved Dynamic Uncertainty:** +10 if dynamic imports or unresolvable relative paths exist in the dependency tree.
+   - Transparent factor breakdown: Each factor displays points, factor name, and observable rationale.
+
+5. **Grounded AI Change Explanation:**
+   - Configured `gemini-3.8-flash` with a structured system prompt bounded strictly by the static evidence set.
+   - Returns structured JSON: summary, breaking risks, per-component impact descriptions, and recommended verification checklist.
+   - No hallucinations: Model is explicitly instructed not to invent dependency edges, test results, or unsupported code details.
+   - Graceful degradation: If Gemini is unavailable or disabled, returns the complete static report without failing the analysis.
+
+6. **Frontend Workflow (`ChangeSetModal.tsx`):**
+   - Added **"Analyze Changes"** button with a flame icon in the repository header bar.
+   - Dual input modes: "Paste Unified Diff" (with 1-click sample presets for `samay-main`) and "Select Changed Files".
+   - Risk Prioritization badge and expandable factors breakdown.
+   - Tabs: Merged Blast Radius, Changed Files, Grounded AI Explanation, Suggested Tests, Analysis Scope & Gaps.
+   - Clickable source citations: "View Source" button links directly to `SourceViewerModal` at the importing line.
+
+7. **Real-World Verification on `samay-main`:**
+   - **Change Set:** Unified diff modifying `samay-main/src/models/poll.ts` (symbol `Poll`) and `samay-main/src/utils/api/server.ts` (symbol `deletePoll`).
+   - **Results:**
+     - Changed files: 2
+     - Total Blast Radius: 8 affected files (2 direct, 6 transitive)
+     - Merged dependents: `pages/recent-polls.tsx` and `src/components/poll/DeletePoll.tsx` correctly show multiple causal links to both changed files.
+     - Entry points affected: 5 routes (`index.tsx`, `[id].tsx`, `[secret].tsx`, `recent-polls.tsx`).
+     - Risk Prioritization: `CRITICAL` (score: 100/100) with 6 explicit scoring factors.
+     - Gemini-3.8-Flash Explanation: Accurately explained the dual contract change across poll modeling and deletion API, highlighting breaking risks in poll administration workflows.
+
+8. **Regression & Build Verification Results:**
+   - [x] Backend test suite: **64 / 64 tests passing** in 20.63s (`pytest backend/tests`).
+   - [x] Added `tests/test_change_set_analysis.py` covering diff parsing, symbol detection, multi-file merged blast radius, risk scoring, IDOR isolation, and input boundary validation.
+   - [x] TypeScript validation: **0 errors** (`npx tsc --noEmit`).
+   - [x] Frontend lint: **0 errors** (`npm run lint`).
+   - [x] Production build: **11 / 11 routes built successfully** (`npm run build`).
+   - [x] All existing chat, vector retrieval, and indexing features intact.
+
+
 
 
 

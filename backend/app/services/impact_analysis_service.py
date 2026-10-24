@@ -53,16 +53,38 @@ def parse_python_file(path: str, content: str) -> dict:
 
     lines = content.splitlines()
 
+    declarations = []
     for node in ast.iter_child_nodes(tree):
         # Top-level functions & classes
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             exports.append({"name": node.name, "line": node.lineno, "kind": "function", "is_default": False})
+            declarations.append({
+                "name": node.name,
+                "start_line": node.lineno,
+                "end_line": getattr(node, "end_lineno", node.lineno),
+                "kind": "function",
+                "is_exported": not node.name.startswith("_")
+            })
         elif isinstance(node, ast.ClassDef):
             exports.append({"name": node.name, "line": node.lineno, "kind": "class", "is_default": False})
+            declarations.append({
+                "name": node.name,
+                "start_line": node.lineno,
+                "end_line": getattr(node, "end_lineno", node.lineno),
+                "kind": "class",
+                "is_exported": not node.name.startswith("_")
+            })
         elif isinstance(node, ast.Assign):
             for target in node.targets:
                 if isinstance(target, ast.Name):
                     exports.append({"name": target.id, "line": node.lineno, "kind": "variable", "is_default": False})
+                    declarations.append({
+                        "name": target.id,
+                        "start_line": node.lineno,
+                        "end_line": getattr(node, "end_lineno", node.lineno),
+                        "kind": "variable",
+                        "is_exported": not target.id.startswith("_")
+                    })
 
         # Imports
         if isinstance(node, ast.Import):
@@ -106,6 +128,7 @@ def parse_python_file(path: str, content: str) -> dict:
     return {
         "path": path,
         "exports": exports,
+        "declarations": declarations,
         "imports": imports,
         "unresolved": unresolved,
         "references": references
@@ -115,6 +138,7 @@ def parse_python_file(path: str, content: str) -> dict:
 def parse_js_ts_fallback(path: str, content: str) -> dict:
     """Regex/token fallback parser for JS/TS when Node is unavailable."""
     exports = []
+    declarations = []
     imports = []
     unresolved = []
     references = {}
@@ -164,6 +188,7 @@ def parse_js_ts_fallback(path: str, content: str) -> dict:
     return {
         "path": path,
         "exports": exports,
+        "declarations": declarations,
         "imports": imports,
         "unresolved": unresolved,
         "references": references

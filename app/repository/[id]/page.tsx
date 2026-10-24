@@ -2,13 +2,14 @@
 
 import { useState, use, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { History, Loader2, Sparkles } from "lucide-react";
+import { History, Loader2, Sparkles, Flame } from "lucide-react";
 import RepoSidebar from "@/components/repository/RepoSidebar";
 import ChatMessage from "@/components/repository/ChatMessage";
 import ChatInput from "@/components/repository/ChatInput";
 import SourceViewerModal from "@/components/repository/SourceViewerModal";
 import FileExplorer from "@/components/repository/FileExplorer";
 import ImpactAnalysisModal from "@/components/repository/ImpactAnalysisModal";
+import ChangeSetModal from "@/components/repository/ChangeSetModal";
 import { 
   fetchApi, 
   reindexRepository, 
@@ -62,6 +63,9 @@ export default function RepositoryPage({ params }: PageProps) {
   // Impact Analysis state
   const [isImpactOpen, setIsImpactOpen] = useState(false);
   const [impactFilePath, setImpactFilePath] = useState("");
+
+  // Change Set Blast Radius state
+  const [isChangeSetOpen, setIsChangeSetOpen] = useState(false);
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -404,6 +408,13 @@ export default function RepositoryPage({ params }: PageProps) {
               </span>
             )}
             <button 
+              onClick={() => setIsChangeSetOpen(true)}
+              className="px-3 py-1.5 rounded-[8px] border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 text-[12px] font-medium hover:bg-indigo-500/20 hover:border-indigo-500/50 transition-all flex items-center gap-1.5 mr-2"
+            >
+              <Flame size={14} className="text-indigo-400" />
+              Analyze Changes
+            </button>
+            <button 
               onClick={handleReindex}
               disabled={repo.status === "indexing"}
               className="px-3 py-1.5 rounded-[8px] border border-[var(--border)] text-[var(--secondary-text)] text-[12px] hover:text-[var(--primary-text)] hover:bg-[var(--surface)] transition-all mr-2 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -571,6 +582,17 @@ export default function RepositoryPage({ params }: PageProps) {
         filePath={impactFilePath}
         onNavigateToFile={(fileId, path, line) => {
           setIsImpactOpen(false);
+          setViewerSource({ file_id: fileId, path, start_line: line, end_line: line });
+          setIsViewerOpen(true);
+        }}
+      />
+
+      <ChangeSetModal
+        isOpen={isChangeSetOpen}
+        onClose={() => setIsChangeSetOpen(false)}
+        repositoryId={id}
+        onNavigateToFile={(fileId, path, line) => {
+          setIsChangeSetOpen(false);
           setViewerSource({ file_id: fileId, path, start_line: line, end_line: line });
           setIsViewerOpen(true);
         }}

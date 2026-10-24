@@ -25,6 +25,8 @@ from app.services.repository_service import process_and_store_repository, genera
 from app.services.retrieval_service import retrieve_relevant_chunks
 from app.schemas.impact_analysis import ImpactAnalysisRequest, ImpactAnalysisResponse
 from app.services.impact_analysis_service import analyze_change_impact
+from app.schemas.change_set import ChangeSetAnalysisRequest, ChangeSetAnalysisResponse
+from app.services.change_set_service import analyze_change_set
 
 router = APIRouter(prefix="/repositories", tags=["repositories"])
 
@@ -394,4 +396,28 @@ async def get_change_impact_analysis(
         max_depth=request.max_depth or 3,
         include_ai_explanation=request.include_ai_explanation if request.include_ai_explanation is not None else True
     )
+
+@router.post("/{id}/change-set-impact", response_model=ChangeSetAnalysisResponse)
+async def get_change_set_impact_analysis(
+    id: uuid.UUID,
+    request: ChangeSetAnalysisRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Evidence-based Git Diff and Change Set Blast Radius Analysis.
+    Parses unified diff or changed files, maps modified lines to AST symbols,
+    computes merged direct/transitive blast radius, deterministic risk priority,
+    and grounded Gemini explanation.
+    """
+    return await analyze_change_set(
+        db=db,
+        repo_id=id,
+        user_id=current_user.id,
+        diff_text=request.diff_text,
+        changed_files_input=[f.model_dump() for f in request.changed_files] if request.changed_files else None,
+        max_depth=request.max_depth or 3,
+        include_ai_explanation=request.include_ai_explanation if request.include_ai_explanation is not None else True
+    )
+
 

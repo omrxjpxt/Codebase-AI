@@ -25,6 +25,7 @@ function analyzeSourceFile(path, content) {
   );
 
   const exports = [];
+  const declarations = [];
   const imports = [];
   const unresolved = [];
   const identifierLines = new Map(); // identifierName -> Set<number>
@@ -43,6 +44,17 @@ function analyzeSourceFile(path, content) {
     });
   }
 
+  function recordDeclaration(name, startPos, endPos, kind, isExported = false) {
+    if (!name) return;
+    declarations.push({
+      name,
+      start_line: getLine(startPos),
+      end_line: getLine(endPos),
+      kind: kind || 'unknown',
+      is_exported: isExported
+    });
+  }
+
   function recordIdentifier(node) {
     if (ts.isIdentifier(node)) {
       const name = node.text;
@@ -55,21 +67,37 @@ function analyzeSourceFile(path, content) {
   }
 
   function visit(node) {
-    // 1. Export Declarations & Named Exports
-    if (ts.isFunctionDeclaration(node) && node.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword)) {
-      const isDefault = node.modifiers?.some(m => m.kind === ts.SyntaxKind.DefaultKeyword);
-      recordExport(node.name ? node.name.text : 'default', node.getStart(sourceFile), 'function', isDefault);
-    } else if (ts.isClassDeclaration(node) && node.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword)) {
-      const isDefault = node.modifiers?.some(m => m.kind === ts.SyntaxKind.DefaultKeyword);
-      recordExport(node.name ? node.name.text : 'default', node.getStart(sourceFile), 'class', isDefault);
-    } else if (ts.isInterfaceDeclaration(node) && node.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword)) {
-      recordExport(node.name ? node.name.text : '', node.getStart(sourceFile), 'interface', false);
-    } else if (ts.isTypeAliasDeclaration(node) && node.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword)) {
-      recordExport(node.name ? node.name.text : '', node.getStart(sourceFile), 'type', false);
-    } else if (ts.isVariableStatement(node) && node.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword)) {
+    const isExported = Boolean(node.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword));
+    const isDefault = Boolean(node.modifiers?.some(m => m.kind === ts.SyntaxKind.DefaultKeyword));
+
+    // 1. Declarations & Export Declarations
+    if (ts.isFunctionDeclaration(node)) {
+      const fnName = node.name ? node.name.text : (isDefault ? 'default' : null);
+      if (fnName) {
+        recordDeclaration(fnName, node.getStart(sourceFile), node.getEnd(), 'function', isExported);
+        if (isExported) recordExport(fnName, node.getStart(sourceFile), 'function', isDefault);
+      }
+    } else if (ts.isClassDeclaration(node)) {
+      const clsName = node.name ? node.name.text : (isDefault ? 'default' : null);
+      if (clsName) {
+        recordDeclaration(clsName, node.getStart(sourceFile), node.getEnd(), 'class', isExported);
+        if (isExported) recordExport(clsName, node.getStart(sourceFile), 'class', isDefault);
+      }
+    } else if (ts.isInterfaceDeclaration(node)) {
+      if (node.name) {
+        recordDeclaration(node.name.text, node.getStart(sourceFile), node.getEnd(), 'interface', isExported);
+        if (isExported) recordExport(node.name.text, node.getStart(sourceFile), 'interface', false);
+      }
+    } else if (ts.isTypeAliasDeclaration(node)) {
+      if (node.name) {
+        recordDeclaration(node.name.text, node.getStart(sourceFile), node.getEnd(), 'type', isExported);
+        if (isExported) recordExport(node.name.text, node.getStart(sourceFile), 'type', false);
+      }
+    } else if (ts.isVariableStatement(node)) {
       for (const decl of node.declarationList.declarations) {
         if (ts.isIdentifier(decl.name)) {
-          recordExport(decl.name.text, decl.getStart(sourceFile), 'variable', false);
+          recordDeclaration(decl.name.text, decl.getStart(sourceFile), decl.getEnd(), 'variable', isExported);
+          if (isExported) recordExport(decl.name.text, decl.getStart(sourceFile), 'variable', false);
         }
       }
     } else if (ts.isExportAssignment(node)) {
@@ -195,6 +223,7 @@ function analyzeSourceFile(path, content) {
   return {
     path,
     exports,
+    declarations,
     imports,
     unresolved,
     references
