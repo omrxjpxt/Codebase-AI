@@ -8,6 +8,7 @@ import ChatMessage from "@/components/repository/ChatMessage";
 import ChatInput from "@/components/repository/ChatInput";
 import SourceViewerModal from "@/components/repository/SourceViewerModal";
 import FileExplorer from "@/components/repository/FileExplorer";
+import ImpactAnalysisModal from "@/components/repository/ImpactAnalysisModal";
 import { 
   fetchApi, 
   reindexRepository, 
@@ -57,6 +58,10 @@ export default function RepositoryPage({ params }: PageProps) {
   // Source Viewer state
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [viewerSource, setViewerSource] = useState<any>(null);
+
+  // Impact Analysis state
+  const [isImpactOpen, setIsImpactOpen] = useState(false);
+  const [impactFilePath, setImpactFilePath] = useState("");
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -534,6 +539,10 @@ export default function RepositoryPage({ params }: PageProps) {
                   setViewerSource({ file_id: fileId });
                   setIsViewerOpen(true);
                 }} 
+                onAnalyzeImpact={(_fileId, filePath) => {
+                  setImpactFilePath(filePath);
+                  setIsImpactOpen(true);
+                }}
               />
             </div>
           )}
@@ -545,8 +554,26 @@ export default function RepositoryPage({ params }: PageProps) {
         onClose={() => setIsViewerOpen(false)}
         repositoryId={id}
         fileId={viewerSource?.file_id}
+        filePath={viewerSource?.path}
         startLine={viewerSource?.start_line}
         endLine={viewerSource?.end_line}
+        onAnalyzeImpact={(path) => {
+          setIsViewerOpen(false);
+          setImpactFilePath(path);
+          setIsImpactOpen(true);
+        }}
+      />
+
+      <ImpactAnalysisModal
+        isOpen={isImpactOpen}
+        onClose={() => setIsImpactOpen(false)}
+        repositoryId={id}
+        filePath={impactFilePath}
+        onNavigateToFile={(fileId, path, line) => {
+          setIsImpactOpen(false);
+          setViewerSource({ file_id: fileId, path, start_line: line, end_line: line });
+          setIsViewerOpen(true);
+        }}
       />
     </div>
   );

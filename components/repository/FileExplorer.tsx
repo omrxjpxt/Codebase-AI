@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Folder, FolderOpen, File as FileIcon, FileText, FileCode, Search, ChevronRight, ChevronDown } from "lucide-react";
+import { Folder, FolderOpen, File as FileIcon, FileText, FileCode, Search, ChevronRight, ChevronDown, GitFork } from "lucide-react";
 import { fetchApi } from "@/lib/api";
 
 interface FileNode {
@@ -14,7 +14,15 @@ interface FileNode {
   size?: number;
 }
 
-export default function FileExplorer({ repositoryId, onFileClick }: { repositoryId: string, onFileClick: (fileId: string) => void }) {
+export default function FileExplorer({ 
+  repositoryId, 
+  onFileClick,
+  onAnalyzeImpact 
+}: { 
+  repositoryId: string; 
+  onFileClick: (fileId: string) => void;
+  onAnalyzeImpact?: (fileId: string, filePath: string) => void;
+}) {
   const [tree, setTree] = useState<FileNode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -134,11 +142,25 @@ export default function FileExplorer({ repositoryId, onFileClick }: { repository
             {getFileIcon(node.name, node.language)}
             <span className="truncate group-hover:text-blue-400 transition-colors">{node.name}</span>
           </div>
-          {node.size && (
-            <span className="text-[11px] text-[var(--muted-text)] opacity-0 group-hover:opacity-100 transition-opacity">
-              {(node.size / 1024).toFixed(1)} KB
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {onAnalyzeImpact && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAnalyzeImpact(node.id, node.path);
+                }}
+                className="p-1 rounded hover:bg-indigo-500/20 text-neutral-400 hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-all"
+                title="Analyze Change Impact"
+              >
+                <GitFork size={13} />
+              </button>
+            )}
+            {node.size && (
+              <span className="text-[11px] text-[var(--muted-text)] opacity-0 group-hover:opacity-100 transition-opacity">
+                {(node.size / 1024).toFixed(1)} KB
+              </span>
+            )}
+          </div>
         </div>
       );
     });

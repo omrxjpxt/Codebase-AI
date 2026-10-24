@@ -199,3 +199,83 @@ export async function deleteChatSession(sessionId: string): Promise<void> {
 export async function globalSearch(query: string): Promise<SearchResults> {
   return fetchApi(`/search?q=${encodeURIComponent(query)}`);
 }
+
+export interface DirectDependent {
+  path: string;
+  file_id?: string;
+  line_number: number;
+  imported_symbols: string[];
+  is_type_only: boolean;
+  is_dynamic: boolean;
+  references: Record<string, number[]>;
+}
+
+export interface TransitiveDependent {
+  path: string;
+  file_id?: string;
+  depth: number;
+  dependency_path: string[];
+  via: string;
+  imported_symbols: string[];
+  line_number?: number;
+}
+
+export interface ImpactTarget {
+  path: string;
+  file_id: string;
+  symbol?: string | null;
+  language: string;
+  exported_symbols: string[];
+}
+
+export interface ImpactSummary {
+  direct_count: number;
+  transitive_count: number;
+  total_affected: number;
+  suggested_tests_count: number;
+  max_depth_reached: number;
+}
+
+export interface UnresolvedDependency {
+  source_file: string;
+  specifier: string;
+  line: number;
+  reason: string;
+}
+
+export interface ImpactAnalysisResult {
+  target: ImpactTarget;
+  summary: ImpactSummary;
+  direct_dependents: DirectDependent[];
+  transitive_dependents: TransitiveDependent[];
+  suggested_tests: string[];
+  unresolved_dependencies: UnresolvedDependency[];
+  ai_explanation?: {
+    overall_impact: string;
+    affected_components: Array<{
+      name: string;
+      impact_type: string;
+      details: string;
+    }>;
+    potential_breaking_changes: string[];
+    recommended_verification: string[];
+  } | null;
+  limitations: string[];
+}
+
+export interface ImpactAnalysisRequest {
+  file_path: string;
+  symbol_name?: string | null;
+  max_depth?: number;
+  include_ai_explanation?: boolean;
+}
+
+export async function analyzeChangeImpact(
+  repositoryId: string,
+  request: ImpactAnalysisRequest
+): Promise<ImpactAnalysisResult> {
+  return await fetchApi(`/repositories/${repositoryId}/impact-analysis`, {
+    method: "POST",
+    body: JSON.stringify(request),
+  });
+}

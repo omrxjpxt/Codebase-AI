@@ -376,6 +376,64 @@ Completed real indexing for the target repository `samay-main` using live Google
    - [x] Production build: 11 / 11 routes built successfully (`npm run build`).
    - [x] User data, chat history, and database integrity fully preserved.
 
+---
+
+## Phase 6: Evidence-Based Change Impact Analysis MVP (COMPLETED)
+
+### Status: COMPLETED
+Built and verified an evidence-based Change Impact Analysis engine providing differentiated codebase intelligence. Replaced ungrounded LLM guessing with syntax-aware AST dependency analysis, bounded transitive BFS path traversal, exact symbol-level reference tracing, and grounded Gemini-3.8-Flash impact explanations:
+
+1. **Architecture & Defensible Dependency Engine:**
+   - **Syntax-Aware AST Parsers:**
+     - TypeScript / JavaScript: official TypeScript Compiler API runner (`backend/app/services/ts_ast_parser.js`) extracting exported symbols (functions, classes, interfaces, types, constants), import declarations (named, default, namespace, type-only), in-code symbol line references, dynamic `import()` calls, and CommonJS `require()`.
+     - Python: AST parser (`ast.parse`) extracting `ast.Import`, `ast.ImportFrom`, `ast.FunctionDef`, `ast.ClassDef`, and `ast.Name` nodes.
+     - Fallback: Syntax-aware regex/token parser when Node or external tools are unavailable.
+   - **Module Specifier Resolution:**
+     - Relative resolution (`./...`, `../...`) with standard extension testing (`.ts`, `.tsx`, `.js`, `.jsx`, `.d.ts`, `.json`, `.py`).
+     - Directory index resolution (`./components` -> `./components/index.tsx`).
+     - Path aliases: `@/*` and `~/*` mapping to root/src paths.
+     - Safe cycle breaking: Visited sets prevent infinite recursion on circular dependencies (`A -> B -> A`).
+     - Bounded traversal: Configurable depth (1 to 5, default 3).
+   - **Symbol-Level Filtering:**
+     - Optional `symbol_name` parameter filters direct dependents to only files importing and referencing that specific exported symbol.
+   - **Suggested Tests Discovery:**
+     - Detects affected test files matching `test/`, `__tests__/`, `.test.`, `.spec.` in downstream paths, explicitly badged as *"Suggested to run (Not executed by analysis)"*.
+
+2. **Backend Service & API Contract:**
+   - Endpoint: `POST /repositories/{id}/impact-analysis`
+   - Authorization: Strict repository ownership check (`repo.user_id == current_user.id`); rejects unauthorized or non-existent repositories with HTTP 404.
+   - Grounded AI Explanations:
+     - Calls `gemini-3.8-flash` with a strict system prompt bounded entirely by the static evidence set.
+     - Never allows Gemini to invent unverified dependencies or files not present in the graph.
+     - Graceful degradation: If `include_ai_explanation=False` or `GEMINI_API_KEY` is unavailable, returns complete static dependency results with `ai_explanation=null` and descriptive limitations.
+
+3. **Frontend Integration & Navigable Workflow:**
+   - `SourceViewerModal.tsx`: Added an **"Analyze Impact"** button in the header bar. When viewing any source file, developers can analyze its blast radius in one click.
+   - `FileExplorer.tsx`: Added an "Analyze Impact" hover button directly on each file row.
+   - `ImpactAnalysisModal.tsx`: Rich interactive modal featuring:
+     - Metric cards: Direct Dependents count, Transitive count, Total Blast Radius, Max Depth.
+     - Symbol Filter dropdown to isolate impact of specific exported symbols.
+     - Direct Dependents view with imported symbol pills, import line numbers, and in-code reference lines.
+     - Transitive Downstream view with clear breadcrumb dependency chains (`A -> B -> C`) and depth badges.
+     - Grounded AI Explanation view detailing overall blast radius, affected modules, breaking change risks, and recommended verification steps.
+     - Suggested Tests view with disclaimer badges.
+     - Analysis Boundaries & Limitations view.
+     - Clickable files: clicking "View" on any cited dependent immediately opens it in `SourceViewerModal` at the importing line.
+
+4. **Real-World Verification on `samay-main`:**
+   - Target File: `samay-main/src/utils/api/server.ts`, Target Symbol: `deletePoll`
+   - Direct Dependent Found: `samay-main/src/components/poll/DeletePoll.tsx` (Line 8: `import { deletePoll } from "../../utils/api/server";`, referenced at lines 8 and 54).
+   - Transitive Dependent Found: `samay-main/pages/recent-polls.tsx` at Depth 2 (Chain: `samay-main/src/utils/api/server.ts` -> `samay-main/src/components/poll/DeletePoll.tsx` -> `samay-main/pages/recent-polls.tsx`).
+   - Gemini Grounded Explanation: Accurately evaluated blast radius as localized to poll deletion, identified breaking risks on parameter signatures and Promise returns, and recommended verification of `DeletePoll.tsx` and `recent-polls.tsx`.
+
+5. **Regression & Build Verification Results:**
+   - [x] Backend test suite: 57 / 57 tests passing in 10.97s (`pytest backend/tests`).
+   - [x] TypeScript validation: 0 errors (`npx tsc --noEmit`).
+   - [x] Frontend lint: 0 errors (`npm run lint`).
+   - [x] Production build: 11 / 11 routes built successfully (`npm run build`).
+   - [x] All existing chat, vector retrieval, and indexing features intact.
+
+
 
 
 

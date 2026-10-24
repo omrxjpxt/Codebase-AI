@@ -23,6 +23,8 @@ from app.core.config import settings
 from app.api.dependencies import get_current_user
 from app.services.repository_service import process_and_store_repository, generate_embeddings_for_repo, get_repository_readiness
 from app.services.retrieval_service import retrieve_relevant_chunks
+from app.schemas.impact_analysis import ImpactAnalysisRequest, ImpactAnalysisResponse
+from app.services.impact_analysis_service import analyze_change_impact
 
 router = APIRouter(prefix="/repositories", tags=["repositories"])
 
@@ -204,6 +206,7 @@ async def get_file_content(
         
     return {
         "filename": file_obj.path.split("/")[-1],
+        "path": file_obj.path,
         "language": file_obj.language,
         "content": file_obj.content
     }
@@ -369,3 +372,26 @@ Provide:
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/{id}/impact-analysis", response_model=ImpactAnalysisResponse)
+async def get_change_impact_analysis(
+    id: uuid.UUID,
+    request: ImpactAnalysisRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Evidence-based Change Impact Analysis for a file or symbol.
+    Determines downstream blast radius using static AST dependency analysis
+    and grounded Gemini-3.8-Flash explanation.
+    """
+    return await analyze_change_impact(
+        db=db,
+        repo_id=id,
+        user_id=current_user.id,
+        target_file_path=request.file_path,
+        symbol_name=request.symbol_name,
+        max_depth=request.max_depth or 3,
+        include_ai_explanation=request.include_ai_explanation if request.include_ai_explanation is not None else True
+    )
+

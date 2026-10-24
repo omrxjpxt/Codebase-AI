@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { X, Loader2, FileCode2 } from "lucide-react";
+import { X, Loader2, FileCode2, GitFork } from "lucide-react";
 import { fetchApi } from "@/lib/api";
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -11,12 +11,15 @@ interface SourceViewerModalProps {
   onClose: () => void;
   repositoryId: string;
   fileId: string;
+  filePath?: string;
   startLine?: number;
   endLine?: number;
+  onAnalyzeImpact?: (filePath: string) => void;
 }
 
 interface FileContent {
   filename: string;
+  path?: string;
   language: string;
   content: string;
 }
@@ -26,8 +29,10 @@ export default function SourceViewerModal({
   onClose,
   repositoryId,
   fileId,
+  filePath,
   startLine,
-  endLine
+  endLine,
+  onAnalyzeImpact
 }: SourceViewerModalProps) {
   const [fileContent, setFileContent] = useState<FileContent | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -113,12 +118,24 @@ export default function SourceViewerModal({
               )}
             </div>
           </div>
-          <button 
-            onClick={onClose} 
-            className="w-8 h-8 flex items-center justify-center rounded-[8px] text-[var(--secondary-text)] hover:text-[var(--primary-text)] hover:bg-[var(--border)] transition-colors"
-          >
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-2">
+            {onAnalyzeImpact && (fileContent?.path || filePath) && (
+              <button
+                onClick={() => onAnalyzeImpact(fileContent?.path || filePath || "")}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20 text-[12px] font-medium transition-colors"
+                title="Analyze change impact for this file"
+              >
+                <GitFork size={14} />
+                <span>Analyze Impact</span>
+              </button>
+            )}
+            <button 
+              onClick={onClose} 
+              className="w-8 h-8 flex items-center justify-center rounded-[8px] text-[var(--secondary-text)] hover:text-[var(--primary-text)] hover:bg-[var(--border)] transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
